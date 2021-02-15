@@ -1,0 +1,8 @@
+discord
+requests
+asyncio
+skingrabber
+datetime
+bs4
+chardet<4.0,>=2.0
+pandas
