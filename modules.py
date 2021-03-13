@@ -3,8 +3,9 @@ from __future__ import unicode_literals, print_function
 
 import json
 import os
-import requests
 import sys
+
+import requests
 from bs4 import BeautifulSoup
 
 
@@ -42,7 +43,6 @@ class storage(object):
             return self.db[key]
         except KeyError:
             return '0'
-
 
 
 API_URL = 'http://en.wikifur.com/w/api.php'

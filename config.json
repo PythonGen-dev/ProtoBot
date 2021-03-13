@@ -1,4 +1,12 @@
 {
-	"token": "token",
-	"prefix": "!= "
+	"token": "",
+	"prefix": "!=",
+	"tokenbeta": "",
+	"prefixbeta": "!= ",
+	"unsplashclientid": "",
+	"pixabayapikey": "",
+	"redditclientid": "",
+	"redditclientsecret": "",
+	"discordbotsggtoken": ""
+	
 }

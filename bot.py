@@ -1,12 +1,25 @@
 import asyncio
-import discord
+import datetime
 import json
+import socket
+import time
+
+import discord
 from discord.ext import commands
+
+from modules import storage
+
+host = socket.gethostname()
 
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
-    token = configdata["token"]
-    prefix = configdata["prefix"]
+    if host[:7] == 'DESKTOP' or host[:3] == 'WIN':
+        token = configdata["tokenbeta"]
+        prefix = configdata["prefixbeta"]
+        print('running beta')
+    else:
+        token = configdata["token"]
+        prefix = configdata["prefix"]
     configjson.close()
 
 
@@ -15,27 +28,56 @@ class Bot(commands.Cog):
 
 
 bot = commands.AutoShardedBot(prefix, case_insensitive=True, intents=discord.Intents.all())
-cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping"]
+cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping", "cogs.onCommandError"]
 
 
 def loadcogs():
-    print(" ╔═╗ Loading cogs ")
+    print(" ╔═╗ Loading cogs")
     for cog in cogs:
-        bot.load_extension(cog), print(' ╟─> [SUCCES] ' + cog)
-    print(' ╚═╝ Load done   ')
+        try:
+            bot.load_extension(cog), print(' ╟─> [SUCCESS] ' + cog)
+        except:
+            print(' ╟─> [FAILED] ' + cog)
+
+    print(' ╚═╝ Load done')
+
+
+@bot.event
+async def on_member_join(member):
+    if str(member.guild.id) == '803522604820070440':
+        badges = storage("./database/badges.db")
+        badgesdata = str(badges.get(str(member.id)))
+        badgeslist = badgesdata.split("$")
+        if "300" in badgeslist:
+            print("")
+        else:
+            if str(badges.get(str(id))) == '0':
+                badges.set(str(id), '300')
+            else:
+                data = badges.get(str(id))
+                badges.set(str(id), data + "$" + '300')
 
 
 @bot.event
 async def on_ready():
+    start_time = time.time()
     print(f"Launch successful.\r\nBot name: {bot.user}")
+    await bot.change_presence(status=discord.Status.online)
     while True:
-        await bot.change_presence(status=discord.Status.online, activity=discord.Game("with you"))
+        await bot.change_presence(activity=discord.Game("with you"))
         await asyncio.sleep(15)
-        await bot.change_presence(status=discord.Status.online, activity=discord.Game("bot prefix is: " + prefix))
+        await bot.change_presence(activity=discord.Game('bot prefix is: "{}"'.format(prefix)))
         await asyncio.sleep(15)
-
+        await bot.change_presence(activity=discord.Game('Help command is: {}help'.format(prefix)))
+        await asyncio.sleep(15)
+        await bot.change_presence(activity=discord.Game('with {} servers'.format(len(list(bot.guilds)))))
+        await asyncio.sleep(15)
+        current_time = time.time()
+        difference = int(round(current_time - start_time))
+        await bot.change_presence(
+            activity=discord.Game('uptime {}'.format(str(datetime.timedelta(seconds=difference)))))
+        await asyncio.sleep(15)
 
 
 loadcogs()
 bot.run(token)
-

@@ -1,13 +1,17 @@
-import discord
-from discord.ext import commands
-import requests
 import json
 import random
+
+import discord
+import requests
+from discord.ext import commands
+
 from modules import storage
+
 translates = storage("./locals/langs.lang")
-langsdb = storage("./database/langsdb.db")
+
 
 def getlang(ctx):
+    langsdb = storage("./database/langsdb.db")
     try:
         guildlang = langsdb.get(str(ctx.guild.id))
         if guildlang == '0': guildlang = 'EN'
@@ -40,7 +44,6 @@ patlist = ['https://media.tenor.com/images/ad8357e58d35c1d63b570ab7e587f212/teno
            'https://i.pinimg.com/originals/d7/c3/26/d7c326bd43776f1e0df6f63956230eb4.gif',
            'https://cdn.discordapp.com/emojis/678297046020784180.gif?v=1',
            'https://thumbs.gfycat.com/TautInformalIndianjackal-small.gif',
-           'https://thumbs.gfycat.com/SpottedBothJellyfish.webp',
            'https://media1.tenor.com/images/0444a1b1e7af31dde95dc67c44c18ce7/tenor.gif?itemid=14368378']
 huglist = ['https://i.pinimg.com/originals/06/dd/8f/06dd8f976b7353d69aec173b44927ef4.gif',
            'https://i.imgur.com/r9aU2xv.gif?noredirect',
@@ -75,54 +78,65 @@ class AnimeCog(commands.Cog, name="anime cog"):
         self.bot = bot
 
     @commands.command(name="facepalm")
-    @commands.cooldown(1, 2, commands.BucketType.member)
-    async def facepalm(self, ctx):
-        guildlang = getlang(ctx = ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('facepalm'+guildlang))
+    async def facepalm(self, ctx, user: discord.Member = None):
+        if user is None:
+            mention = ''
+        else:
+            mention = user.mention
+        guildlang = getlang(ctx=ctx)
+        embed = discord.Embed(color=0xff9900, title=translates.get('facepalm' + guildlang), description=mention)
         embed.set_image(url=random.choice(facepalmlist))
         await ctx.send(embed=embed)
 
     @commands.command(name="hug")
-    @commands.cooldown(1, 2, commands.BucketType.member)
-    async def hug(self, ctx):
-        guildlang = getlang(ctx = ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('hug'+guildlang))
+    async def hug(self, ctx, user: discord.Member = None):
+        if user is None:
+            mention = ''
+        else:
+            mention = user.mention
+        guildlang = getlang(ctx=ctx)
+        embed = discord.Embed(color=0xff9900, title=translates.get('hug' + guildlang), description=mention)
         embed.set_image(url=random.choice(huglist))
         await ctx.send(embed=embed)
 
     @commands.command(name="wink")
-    @commands.cooldown(1, 2, commands.BucketType.member)
-    async def wink(self, ctx):
-        guildlang = getlang(ctx = ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('wink'+guildlang))
+    async def wink(self, ctx, user: discord.Member = None):
+        if user is None:
+            mention = ''
+        else:
+            mention = user.mention
+        guildlang = getlang(ctx=ctx)
+        embed = discord.Embed(color=0xff9900, title=translates.get('wink' + guildlang), description=mention)
         embed.set_image(url=random.choice(winklist))
         await ctx.send(embed=embed)
 
     @commands.command(name="pat")
-    @commands.cooldown(1, 2, commands.BucketType.member)
-    async def pat(self, ctx):
-        guildlang = getlang(ctx = ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('pat'+guildlang))
+    async def pat(self, ctx, user: discord.Member = None):
+        if user is None:
+            mention = ''
+        else:
+            mention = user.mention
+        guildlang = getlang(ctx=ctx)
+        embed = discord.Embed(color=0xff9900, title=translates.get('pat' + guildlang), description=mention)
         embed.set_image(url=random.choice(patlist))
         await ctx.send(embed=embed)
 
     @commands.command(name="sad")
-    @commands.cooldown(1, 2, commands.BucketType.member)
     async def sad(self, ctx):
-        guildlang = getlang(ctx = ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('sad'+guildlang))
+        guildlang = getlang(ctx=ctx)
+        embed = discord.Embed(color=0xff9900, title=translates.get('sad' + guildlang))
         embed.set_image(url=random.choice(sadlist))
         await ctx.send(embed=embed)
 
     @commands.command(name="quote")
-    @commands.cooldown(1, 2, commands.BucketType.member)
     async def quote(self, ctx):
-        guildlang = getlang(ctx = ctx)
+        guildlang = getlang(ctx=ctx)
         response = requests.get('https://some-random-api.ml/animu/quote', timeout=5)
         json_data = json.loads(response.text)
-        embed = discord.Embed(color=0xff9900, title=json_data['anime'] + ' ' + translates.get('quote'+guildlang).casefold(),
-                              description=translates.get('characther'+guildlang)+' '+json_data['characther'])
-        embed.add_field(name=translates.get('quote'+guildlang), value=json_data['sentence'], inline=False, )
+        embed = discord.Embed(color=0xff9900,
+                              title=json_data['anime'] + ' ' + translates.get('quote' + guildlang).casefold(),
+                              description=translates.get('characther' + guildlang) + ' ' + json_data['characther'])
+        embed.add_field(name=translates.get('quote' + guildlang), value=json_data['sentence'], inline=False, )
         await ctx.send(embed=embed)
 
 
