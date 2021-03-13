@@ -1,12 +1,12 @@
 import json
 import random
-from PIL import Image
 from io import BytesIO
+
 import art
 import discord
-
 import praw
 import requests
+from PIL import Image
 from discord.ext import commands
 from langdetect import detect
 from transliterate import translit
@@ -21,8 +21,8 @@ with open("config.json", "r") as configjson:
     redditclientsecret = configdata["redditclientsecret"]
     configjson.close()
 
-
-reddit = praw.Reddit(client_id=redditclientid, client_secret=redditclientsecret, user_agent='protobot', check_for_async=False)
+reddit = praw.Reddit(client_id=redditclientid, client_secret=redditclientsecret, user_agent='protobot',
+                     check_for_async=False)
 
 translates = storage("./locals/langs.lang")
 
@@ -76,9 +76,21 @@ class FunCog(commands.Cog, name="Fun module"):
             if arg is None:
                 await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
             else:
-                embed = discord.Embed(title=arg.name).set_image(url=arg.url)
+
                 width, height = Image.open(BytesIO(requests.get(arg.url).content)).size
-                embed = embed.set_footer(text=translates.get("width"+guildlang)+': '+str(width)+"\r\n"+translates.get("height"+guildlang)+': '+str(height)+"\r\n"+translates.get("filesize"+guildlang)+': '+requests.get(arg.url, stream=True).headers['Content-length'])
+                img = Image.open(requests.get(arg.url, stream=True).raw)
+                colors = img.getpixel((round(width / 2), round(height / 2)))
+                if arg.animated:
+                    embed = discord.Embed(title=arg.name).set_image(url=arg.url)
+                else:
+                    embed = discord.Embed(title=arg.name,
+                                          color=discord.Colour.from_rgb(colors[0], colors[1], colors[2])).set_image(
+                        url=arg.url)
+
+                embed = embed.set_footer(
+                    text=translates.get("width" + guildlang) + ': ' + str(width) + "\r\n" + translates.get(
+                        "height" + guildlang) + ': ' + str(height) + "\r\n" + translates.get(
+                        "filesize" + guildlang) + ': ' + requests.get(arg.url, stream=True).headers['Content-length'])
                 await ctx.send(embed=embed)
         except discord.ext.commands.errors.EmojiNotFound:
             embed = discord.Embed(title=translates.get("error" + guildlang),

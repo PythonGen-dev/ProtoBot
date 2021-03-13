@@ -2,8 +2,10 @@ import datetime
 import json
 import random
 import socket
+from io import BytesIO
 
 import discord
+from PIL import Image
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
@@ -18,6 +20,7 @@ with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
     discordbotsggtoken = configdata["discordbotsggtoken"]
     configjson.close()
+
 
 def getcustomemote(self, emote, ctx):
     user = ctx.guild.get_member(803522872814731264)
@@ -137,6 +140,24 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         else:
             await ctx.send(embed=discord.Embed(description='Invalid argument', title='Error'))
 
+    @commands.command(name="devsetlang")
+    async def devsetlang(self, ctx, arg=None):
+        if str(ctx.author.id) == "605354959310946306":
+            language = None
+            if arg is None:
+                await ctx.send(embed=discord.Embed(description='No arguments', title='Error'))
+                return ()
+            elif arg == "en":
+                language = "EN"
+            elif arg == "ru":
+                language = "RU"
+            if language is not None:
+                langsdb = storage("./database/langsdb.db")
+                langsdb.set(str(ctx.guild.id), language)
+                await ctx.send(embed=discord.Embed(description='Language set to: ' + language, title='Successful'))
+            else:
+                await ctx.send(embed=discord.Embed(description='Invalid argument', title='Error'))
+
     @commands.command(name="userinfo")
     async def userinfo(self, ctx, userctx=None):
         guildlang = getlang(ctx=ctx)
@@ -225,13 +246,23 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                     badgesstr = ''
                     for i in badgeslist:
                         if badgesstr == '':
-                            badgesstr = badgesstr + "> " + emotes.get(i + 'badge') + ' ' + translates.get(
+                            badgesstr = badgesstr + "> " + getcustomemote(self=self, emote=i + 'badge',
+                                                                          ctx=ctx) + ' ' + translates.get(
                                 i + 'badge' + guildlang)
                         else:
-                            badgesstr = badgesstr + "\r\n" + '> ' + emotes.get(i + 'badge') + ' ' + translates.get(
+                            badgesstr = badgesstr + "\r\n" + '> ' + getcustomemote(self=self, emote=i + 'badge',
+                                                                                   ctx=ctx) + ' ' + translates.get(
                                 i + 'badge' + guildlang)
                     embed = embed.add_field(name='⬢** {0}**'.format(translates.get('badges' + guildlang)),
                                             value=badgesstr)
+                roles = ', '.join([role.mention for role in member.roles[1:]])
+                if roles != '':
+                    embed.add_field(
+                        name='⬢ **{0} {1}**'.format(len(member.roles) - 1, translates.get('norolescount' + guildlang)),
+                        value=roles + '.', inline=True)
+                else:
+                    embed.add_field(name='⬢ **' + translates.get('roles' + guildlang) + "** ",
+                                    value=translates.get('noroles' + guildlang) + '.', inline=True)
                 await ctx.send(embed=embed)
             else:
                 embed = discord.Embed(color=0xff9900, title=translates.get("infoAboutBotErr" + ' ' + guildlang))
@@ -247,7 +278,8 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         if str(id) == '605354959310946306':
             guildlang = getlang(ctx=ctx)
             badges = storage("./database/badges.db")
-            embed = discord.Embed(title='Added', description=emotes.get(arg + 'badge') + ' ' + translates.get(
+            embed = discord.Embed(title='Added', description=getcustomemote(self=self, emote=arg + 'badge',
+                                                                            ctx=ctx) + ' ' + translates.get(
                 arg + 'badge' + guildlang))
 
             if not userctx:
@@ -264,6 +296,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                 else:
                     data = badges.get(str(id))
                     badges.set(str(id), data + "$" + arg)
+
             await ctx.send(embed=embed)
 
     @commands.command(name="avatar")
@@ -271,7 +304,19 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         guildlang = getlang(ctx=ctx)
         member = ctx.author if not userctx else userctx
         userinf = await self.bot.fetch_user(member.id)
-        embed = discord.Embed(color=0xff9900, title=translates.get("userAvatar" + guildlang) + ' ' + str(userinf))
+        img = Image.open(requests.get(member.avatar_url, stream=True).raw)
+        width, height = Image.open(BytesIO(requests.get(member.avatar_url).content)).size
+        colors = img.getpixel((round(width / 2), round(height / 2)))
+        if member.is_avatar_animated():
+            embed = discord.Embed(color=0xff9900, title=translates.get("userAvatar" + guildlang) + ' ' + str(userinf))
+        else:
+            embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
+                                  title=translates.get("userAvatar" + guildlang) + ' ' + str(userinf))
+        embed = embed.set_footer(
+            text=translates.get("width" + guildlang) + ': ' + str(width) + "\r\n" + translates.get(
+                "height" + guildlang) + ': ' + str(height) + "\r\n" + translates.get(
+                "filesize" + guildlang) + ': ' + requests.get(member.avatar_url, stream=True).headers['Content-length'])
+
         embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
 
@@ -326,8 +371,9 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         embed.set_thumbnail(url='https://discord.bots.gg/img/logo_transparent.png')
         if arg is None:
             count = \
-            requests.get(url='https://discord.bots.gg/api/v1/bots?limit=1', headers={"Authorization": TOKEN}).json()[
-                'count']
+                requests.get(url='https://discord.bots.gg/api/v1/bots?limit=1',
+                             headers={"Authorization": TOKEN}).json()[
+                    'count']
             ranges: int = round(count / 5)
             randomranges: int = random.randrange(1, ranges)
             r = requests.get(url='https://discord.bots.gg/api/v1/bots?limit=5&page={0}'.format(str(randomranges)),

@@ -64,11 +64,16 @@ async def on_ready():
     print(f"Launch successful.\r\nBot name: {bot.user}")
     await bot.change_presence(status=discord.Status.online)
     while True:
+
         await bot.change_presence(activity=discord.Game("with you"))
         await asyncio.sleep(15)
         await bot.change_presence(activity=discord.Game('bot prefix is: "{}"'.format(prefix)))
         await asyncio.sleep(15)
-        await bot.change_presence(activity=discord.Game('Help command is: {}help'.format(prefix)))
+        user_list = []
+        for guild in bot.guilds:
+            for member in guild.members:
+                user_list.append(member)
+        await bot.change_presence(activity=discord.Game('with {} users'.format(len(user_list))))
         await asyncio.sleep(15)
         await bot.change_presence(activity=discord.Game('with {} servers'.format(len(list(bot.guilds)))))
         await asyncio.sleep(15)
