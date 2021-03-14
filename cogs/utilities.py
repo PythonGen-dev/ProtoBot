@@ -19,6 +19,7 @@ emotes = storage("./locals/emotes.lang")
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
     discordbotsggtoken = configdata["discordbotsggtoken"]
+    fetchusertoken = configdata["fetchusertoken"]
     configjson.close()
 
 
@@ -427,6 +428,61 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                         else:
                             embed.add_field(name=i, value=r.json()[i], inline=False)
                 embed.set_thumbnail(url=r.json()['avatarURL'])
+        await ctx.send(embed=embed)
+
+    @commands.command(name="topcord")
+    async def topcord(self, ctx, arg=None):
+        id = arg
+        guildlang = getlang(ctx=ctx)
+
+        url = "http://bots.topcord.ru/api/"
+        r = requests.get(url + str(id)).json()
+        try:
+            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/')
+            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+            e = r['error']
+            embed.add_field(name=translates.get('error' + guildlang),
+                            value=translates.get("notFound" + guildlang)[:-1])
+        except:
+            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/bots/'+id)
+            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+            for i in r:
+                if i in ['customInvite', 'bot', 'owner', 'botWebsite', 'date', 'botTags', 'upvotes']:
+                    if i == 'bot':
+                        fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']), headers={'authorization': 'Bot ' + fetchusertoken})
+                        embed.add_field(name=translates.get('botname' + guildlang), value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'], inline=False)
+                        embed.set_thumbnail(url='https://cdn.discordapp.com/avatars/'+str(r[i]['id'])+'/'+fetchuser.json()['avatar']+".png")
+
+                    elif i == 'owner':
+                        fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']), headers={'authorization': 'Bot ' + fetchusertoken})
+                        embed.add_field(name=translates.get('serverOwner' + guildlang), value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'], inline=False)
+                    elif i == 'customInvite':
+                        embed.add_field(name=translates.get('botinvite' + guildlang), value=translates.get('clickhere' + guildlang) + '(' + r[i] + ')', inline=False)
+                    elif i == 'botTags':
+                        if str(r[i]) != "[]":
+                            tags = ""
+                            for t in r[i]:
+                                if tags == "": tags = translates.get(t+"tag"+guildlang) + ", "
+                                else: tags = tags + translates.get(t+"tag"+guildlang) +", "
+                            if tags[-2] == ',': tags = tags[:-2]
+                            embed.add_field(name=translates.get('tags' + guildlang), value=tags, inline=False)
+                    elif i == 'upvotes':
+                        embed.add_field(name=translates.get('upvotes' + guildlang), value=r[i], inline=False)
+                    elif i == 'date':
+                        for t in r[i]:
+                            date = str(str(r[i][t]).split(' ')[0]).split("-")
+                            date = date[2] +' '+ translates.get(date[1] +'month'+ guildlang) +' '+ date[0]+' '+translates.get('year'+guildlang)
+                            embed.add_field(name=translates.get(t +'topcord' + guildlang), value=date, inline=False)
+                else:
+                    if i == 'prefix':
+                        embed.add_field(name=translates.get('prefix' + guildlang), value=r[i], inline=False)
+                    elif i == 'shortDesc':
+                        embed.add_field(name=translates.get('description' + guildlang), value=r[i],
+                                        inline=False)
+                    else:
+                        embed.add_field(name=i, value=r[i], inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(name="about")
