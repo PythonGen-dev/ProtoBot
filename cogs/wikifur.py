@@ -29,9 +29,7 @@ class WikifurCog(commands.Cog, name="wikifur command"):
             await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang),
                                                color=discord.Colour.from_rgb(67, 69, 156)))
         else:
-
             try:
-
                 wikifurcontent = modules.wikifursearch(arg, results=10, suggestion=False)
                 if not wikifurcontent:
                     wikifurcontent = translates.get('none' + guildlang) + arg

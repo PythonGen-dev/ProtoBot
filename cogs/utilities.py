@@ -15,7 +15,6 @@ translates = storage("./locals/langs.lang")
 import requests
 
 emotes = storage("./locals/emotes.lang")
-
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
     discordbotsggtoken = configdata["discordbotsggtoken"]
@@ -91,7 +90,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                             getcustomemote(self=self, emote='human', ctx=ctx) + translates.get("realUsers" + guildlang),
                             ctx.guild.member_count - botsinservercount,
                             inline=True))
-
         embed.add_field(name=translates.get("Channels" + guildlang),
                         value="> **{0}** {1}\r\n > **{2}** {3}\r\n > **{4}** {5}".format(
                             getcustomemote(self=self, emote='AllChannels', ctx=ctx) + translates.get(
@@ -163,16 +161,12 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
     async def userinfo(self, ctx, userctx=None):
         guildlang = getlang(ctx=ctx)
         try:
-
             spotify = "0"
-
             if not userctx:
                 member = ctx.author
             else:
                 member = await MemberConverter().convert(ctx, userctx)
-
             if not member.bot:
-
                 userid = member.id
                 userinf = await self.bot.fetch_user(userid)
                 embed = discord.Embed(color=0xff9900,
@@ -194,20 +188,17 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                     else:
                         embed.add_field(name=translates.get('userdescriptiontitle' + guildlang), value=descvalue,
                                         inline=False)
-
                 if str(member.activity)[:15] == "<Activity type=":
                     customactivitystr = translates.get("userActivityNone" + guildlang)
                 elif str(member.activity) == "Spotify":
                     customactivitystr = translates.get("userActivityNone" + guildlang)
                     spotify = "1"
-
                 else:
                     customactivitystr = str(member.activity)
                 if spotify == "1":
                     status = translates.get("userStatusSpotify" + guildlang) + ' ' + "Spotify"
                 else:
                     status = translates.get(str(member.status) + guildlang)
-
                 usercreationdate = member.created_at.strftime("%d {0} %Y {1}, %H:%M:%S")
                 usercreationdateformat = str(usercreationdate).format(
                     translates.get(str(member.created_at.strftime("%m")) + 'month' + guildlang),
@@ -220,13 +211,10 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                     activityemote = getcustomemote(self=self, emote='spotify', ctx=ctx)
                 else:
                     activityemote = getcustomemote(self=self, emote=str(member.status), ctx=ctx)
-
                 if customactivitystr == 'None':
                     customactivitystr = translates.get("userActivityNone" + guildlang)
-
                 if customactivitystr is None:
                     customactivitystr = translates.get("userActivityNone" + guildlang)
-
                 embed.add_field(name=translates.get("basicInfo" + guildlang),
                                 value='⬢** {0}**\r\n > {1}\r\n⬢** {2}**\r\n > {3} ({4})\r\n⬢** {5}**\r\n > {6} ({7})\r\n⬢** {8}**\r\n > {9}\r\n⬢** {10}**\r\n > {11}'.format(
                                     translates.get("userInfoUsername" + guildlang), userinf,
@@ -235,13 +223,11 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                     translates.get("userinfoAccCreated" + guildlang), usercreationdateformat,
                                     getmonth(date=member.created_at, lang=guildlang),
                                     translates.get("userinfoStatus" + guildlang), activityemote + str(status),
-
                                     translates.get("customactivity" + guildlang), customactivitystr), inline=False)
                 embed.set_footer(text="ID: " + str(userid))
                 embed.set_thumbnail(url=member.avatar_url)
                 badges = storage("./database/badges.db")
                 badgesdata = str(badges.get(str(userid)))
-
                 if badgesdata != "0":
                     badgeslist = badgesdata.split("$")
                     badgesstr = ''
@@ -266,7 +252,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                     value=translates.get('noroles' + guildlang) + '.', inline=True)
                 await ctx.send(embed=embed)
             else:
-                embed = discord.Embed(color=0xff9900, title=translates.get("infoAboutBotErr" + ' ' + guildlang))
+                embed = discord.Embed(color=0xff9900, title=translates.get("infoAboutBotErr" + guildlang))
                 await ctx.send(embed=embed)
         except discord.ext.commands.errors.MemberNotFound:
             embed = discord.Embed(title=translates.get("error" + guildlang),
@@ -282,7 +268,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
             embed = discord.Embed(title='Added', description=getcustomemote(self=self, emote=arg + 'badge',
                                                                             ctx=ctx) + ' ' + translates.get(
                 arg + 'badge' + guildlang))
-
             if not userctx:
                 member = ctx.author
             else:
@@ -297,7 +282,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                 else:
                     data = badges.get(str(id))
                     badges.set(str(id), data + "$" + arg)
-
             await ctx.send(embed=embed)
 
     @commands.command(name="avatar")
@@ -317,7 +301,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
             text=translates.get("width" + guildlang) + ': ' + str(width) + "\r\n" + translates.get(
                 "height" + guildlang) + ': ' + str(height) + "\r\n" + translates.get(
                 "filesize" + guildlang) + ': ' + requests.get(member.avatar_url, stream=True).headers['Content-length'])
-
         embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
 
@@ -348,7 +331,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
             embed = embed.add_field(name=translates.get('pypisetup' + guildlang),
                                     value='```' + 'pip install ' + api['info']['name'] + '```',
                                     inline=False)
-
             await ctx.send(embed=embed)
 
     @commands.command(name="aboutme")
@@ -387,7 +369,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                                                                   'userId'], inline=False)
         else:
             r = requests.get(url='https://discord.bots.gg/api/v1/bots/' + arg, headers={"Authorization": TOKEN})
-            print(r.text)
             if r.text == '{"message":"An invalid user ID was specified."}':
                 embed.add_field(name=translates.get('error' + guildlang), value=translates.get('unkarg' + guildlang))
             elif r.text == '{"message":"The provided user ID points to an unknown bot."}':
@@ -431,12 +412,46 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         await ctx.send(embed=embed)
 
     @commands.command(name="topcord")
-    async def topcord(self, ctx, arg=None):
-        id = arg
+    async def topcord(self, ctx, *, arg=None):
         guildlang = getlang(ctx=ctx)
+        try:
+            bot = await MemberConverter().convert(ctx, arg)
+            if bot.bot:
+                id = str(bot.id)
+            else:
+                embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                      description=translates.get("thisisnotbot" + guildlang), colour=0xFF0000)
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                await ctx.send(embed=embed)
+                return
 
+        except:
+            id = str(arg)
         url = "http://bots.topcord.ru/api/"
-        r = requests.get(url + str(id)).json()
+        try:
+            r = requests.get(url + str(id), timeout=4).json()
+        except requests.exceptions.ReadTimeout:
+            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                  description='Read timed out.', colour=0xFF0000)
+            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+            await ctx.send(embed=embed)
+            return
+        except OSError:
+            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                  description='Failed to establish a new connection.', colour=0xFF0000)
+            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+            await ctx.send(embed=embed)
+            return
+        except:
+            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                  description='Failed to establish a new connection.', colour=0xFF0000)
+            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+            await ctx.send(embed=embed)
+            return
         try:
             embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/')
             embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
@@ -445,27 +460,41 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
             embed.add_field(name=translates.get('error' + guildlang),
                             value=translates.get("notFound" + guildlang)[:-1])
         except:
-            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/bots/'+id)
+            fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r['bot']['id']),
+                                     headers={'authorization': 'Bot ' + fetchusertoken})
+            avatar = 'https://cdn.discordapp.com/avatars/' + str(r['bot']['id']) + '/' + fetchuser.json()[
+                'avatar'] + ".png"
+            img = Image.open(requests.get(avatar, stream=True).raw)
+            width, height = Image.open(BytesIO(requests.get(avatar).content)).size
+            colors = img.getpixel((round(width / 2), round(height / 2)))
+            embed = discord.Embed(title=fetchuser.json()['username'] + ' bots.topcord.ru', url='https://bots.topcord.ru/bots/' + id,
+                                  color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]))
             embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
             embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
             for i in r:
                 if i in ['customInvite', 'bot', 'owner', 'botWebsite', 'date', 'botTags', 'upvotes']:
                     if i == 'bot':
-                        fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']), headers={'authorization': 'Bot ' + fetchusertoken})
-                        embed.add_field(name=translates.get('botname' + guildlang), value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'], inline=False)
-                        embed.set_thumbnail(url='https://cdn.discordapp.com/avatars/'+str(r[i]['id'])+'/'+fetchuser.json()['avatar']+".png")
-
+                        embed.add_field(name=translates.get('botname' + guildlang),
+                                        value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'],
+                                        inline=False)
+                        embed.set_thumbnail(url=avatar)
                     elif i == 'owner':
-                        fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']), headers={'authorization': 'Bot ' + fetchusertoken})
-                        embed.add_field(name=translates.get('serverOwner' + guildlang), value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'], inline=False)
+                        fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']),
+                                                 headers={'authorization': 'Bot ' + fetchusertoken})
+                        embed.add_field(name=translates.get('serverOwner' + guildlang),
+                                        value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'],
+                                        inline=False)
                     elif i == 'customInvite':
-                        embed.add_field(name=translates.get('botinvite' + guildlang), value=translates.get('clickhere' + guildlang) + '(' + r[i] + ')', inline=False)
+                        embed.add_field(name=translates.get('botinvite' + guildlang),
+                                        value=translates.get('clickhere' + guildlang) + '(' + r[i] + ')', inline=False)
                     elif i == 'botTags':
                         if str(r[i]) != "[]":
                             tags = ""
                             for t in r[i]:
-                                if tags == "": tags = translates.get(t+"tag"+guildlang) + ", "
-                                else: tags = tags + translates.get(t+"tag"+guildlang) +", "
+                                if tags == "":
+                                    tags = translates.get(t + "tag" + guildlang) + ", "
+                                else:
+                                    tags = tags + translates.get(t + "tag" + guildlang) + ", "
                             if tags[-2] == ',': tags = tags[:-2]
                             embed.add_field(name=translates.get('tags' + guildlang), value=tags, inline=False)
                     elif i == 'upvotes':
@@ -473,8 +502,9 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                     elif i == 'date':
                         for t in r[i]:
                             date = str(str(r[i][t]).split(' ')[0]).split("-")
-                            date = date[2] +' '+ translates.get(date[1] +'month'+ guildlang) +' '+ date[0]+' '+translates.get('year'+guildlang)
-                            embed.add_field(name=translates.get(t +'topcord' + guildlang), value=date, inline=False)
+                            date = date[2] + ' ' + translates.get(date[1] + 'month' + guildlang) + ' ' + date[
+                                0] + ' ' + translates.get('year' + guildlang)
+                            embed.add_field(name=translates.get(t + 'topcord' + guildlang), value=date, inline=False)
                 else:
                     if i == 'prefix':
                         embed.add_field(name=translates.get('prefix' + guildlang), value=r[i], inline=False)
@@ -515,7 +545,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                         value=translates.get('clickhere' + guildlang) + "(https://discord.gg/tRQbVUgKqw)", inline=True)
         embed.add_field(name=translates.get('botinvite' + guildlang),
                         value=translates.get('clickhere' + guildlang) + "(http://bit.ly/furprotobot)", inline=True)
-
         embed.set_footer(text='PythonGen © 2021 All rights reserved')
         embed.set_thumbnail(url=self.bot.user.avatar_url)
         await ctx.send(embed=embed)

@@ -7,7 +7,6 @@ from modules import storage
 
 prefix = json.load(open("config.json", "r"))["prefix"]
 translates = storage("./locals/langs.lang")
-
 emotes = storage("./locals/emotes.lang")
 
 
@@ -22,7 +21,6 @@ def getcustomemote(self, emote, ctx):
 
 def getlang(ctx):
     langsdb = storage("./database/langsdb.db")
-
     try:
         guildlang = langsdb.get(str(ctx.guild.id))
         if guildlang == '0': guildlang = 'EN'
@@ -81,7 +79,6 @@ class HelpCog(commands.Cog, name="help command"):
                                         translates.get('animefacepalm' + guildlang),
                                         translates.get('animewink' + guildlang), translates.get('animepet' + guildlang),
                                         translates.get('animequote' + guildlang)), inline=False)
-
         await ctx.send(
             embed=embed.set_footer(text='{0}: {1}/{2}'.format(translates.get('helppage' + guildlang), page, pages)))
 

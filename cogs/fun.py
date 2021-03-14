@@ -20,10 +20,8 @@ with open("config.json", "r") as configjson:
     redditclientid = configdata["redditclientid"]
     redditclientsecret = configdata["redditclientsecret"]
     configjson.close()
-
 reddit = praw.Reddit(client_id=redditclientid, client_secret=redditclientsecret, user_agent='protobot',
                      check_for_async=False)
-
 translates = storage("./locals/langs.lang")
 
 
@@ -76,7 +74,6 @@ class FunCog(commands.Cog, name="Fun module"):
             if arg is None:
                 await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
             else:
-
                 width, height = Image.open(BytesIO(requests.get(arg.url).content)).size
                 img = Image.open(requests.get(arg.url, stream=True).raw)
                 colors = img.getpixel((round(width / 2), round(height / 2)))
@@ -86,7 +83,6 @@ class FunCog(commands.Cog, name="Fun module"):
                     embed = discord.Embed(title=arg.name,
                                           color=discord.Colour.from_rgb(colors[0], colors[1], colors[2])).set_image(
                         url=arg.url)
-
                 embed = embed.set_footer(
                     text=translates.get("width" + guildlang) + ': ' + str(width) + "\r\n" + translates.get(
                         "height" + guildlang) + ': ' + str(height) + "\r\n" + translates.get(
@@ -109,7 +105,6 @@ class FunCog(commands.Cog, name="Fun module"):
             await ctx.send(
                 embed=discord.Embed(color=0x5E924E, title=translates.get("ErrNotArg" + guildlang)).set_footer(
                     text="ASCII command"))
-
         else:
             try:
                 if detect(arg) == 'en':
@@ -121,7 +116,6 @@ class FunCog(commands.Cog, name="Fun module"):
                     cropped = arg
                 except:
                     pass
-
             razbitoe = [cropped[i:i + 10] for i in range(0, len(cropped), 10)]
             text = "**ASCII**\r\n```"
             for i in razbitoe:
@@ -188,7 +182,6 @@ class FunCog(commands.Cog, name="Fun module"):
                 except IndexError:
                     await ctx.send(embed=discord.Embed(title=translates.get("error" + guildlang),
                                                        description=translates.get("notFound" + guildlang)[:-1]))
-
         else:
             await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang),
                                                description=translates.get('notNSFW' + guildlang)))
