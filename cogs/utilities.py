@@ -105,8 +105,6 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         embed.set_footer(text="ID: " + str(ctx.guild.id))
         await ctx.send(embed=embed)
 
-    async def is_owner(ctx):
-        return ctx.author.id == 316026178463072268
 
     @commands.command()
     async def eval(self, ctx, *, code):
