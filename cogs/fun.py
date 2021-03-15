@@ -1,17 +1,17 @@
 import json
 import random
-from io import BytesIO
-
+from glitch_this import ImageGlitcher
 import art
 import discord
 import praw
 import requests
 from PIL import Image
 from discord.ext import commands
+from discord.ext.commands import MemberConverter
 from langdetect import detect
 from transliterate import translit
 
-from modules import storage
+from modules import getcolorfromurl, storage, getlang
 
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
@@ -23,16 +23,6 @@ with open("config.json", "r") as configjson:
 reddit = praw.Reddit(client_id=redditclientid, client_secret=redditclientsecret, user_agent='protobot',
                      check_for_async=False)
 translates = storage("./locals/langs.lang")
-
-
-def getlang(ctx):
-    langsdb = storage("./database/langsdb.db")
-    try:
-        guildlang = langsdb.get(str(ctx.guild.id))
-        if guildlang == '0': guildlang = 'EN'
-    except:
-        guildlang = 'EN'
-    return guildlang
 
 
 class FunCog(commands.Cog, name="Fun module"):
@@ -51,13 +41,17 @@ class FunCog(commands.Cog, name="Fun module"):
             try:
                 response = requests.get("https://api.mojang.com/users/profiles/minecraft/" + arg)
                 json_data = json.loads(response.text)
-                await ctx.send(embed=discord.Embed(color=0x5E924E,
+
+                skin = "https://crafatar.com/skins/" + json_data["id"] + "?size=4.png"
+                head = "https://crafatar.com/renders/head/" + json_data["id"] + ".png"
+                colors = getcolorfromurl(head)
+                await ctx.send(embed=discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
                                                    title=translates.get("username" + guildlang) + ' ' + json_data[
                                                        "name"], description="\r\n**UUID:** " + json_data[
                         "id"] + "\r\n\r\n {} ".format(translates.get("skin" + guildlang))).set_thumbnail(
                     url="https://crafatar.com/renders/body/" + json_data["id"] + ".png").set_image(
-                    url="https://crafatar.com/skins/" + json_data["id"] + "?size=4.png").set_footer(
-                    icon_url=footer_image, text="Minecraft command"))
+                    url=skin).set_footer(
+                    icon_url=head, text="Minecraft command"))
             except json.JSONDecodeError:
                 await ctx.send(embed=discord.Embed(color=0x5E924E, title=translates.get("error" + guildlang),
                                                    description=translates.get("notFound" + guildlang)[:-1]).set_footer(
@@ -74,9 +68,7 @@ class FunCog(commands.Cog, name="Fun module"):
             if arg is None:
                 await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
             else:
-                width, height = Image.open(BytesIO(requests.get(arg.url).content)).size
-                img = Image.open(requests.get(arg.url, stream=True).raw)
-                colors = img.getpixel((round(width / 2), round(height / 2)))
+                colors = getcolorfromurl(arg.url)
                 if arg.animated:
                     embed = discord.Embed(title=arg.name).set_image(url=arg.url)
                 else:
@@ -84,9 +76,8 @@ class FunCog(commands.Cog, name="Fun module"):
                                           color=discord.Colour.from_rgb(colors[0], colors[1], colors[2])).set_image(
                         url=arg.url)
                 embed = embed.set_footer(
-                    text=translates.get("width" + guildlang) + ': ' + str(width) + "\r\n" + translates.get(
-                        "height" + guildlang) + ': ' + str(height) + "\r\n" + translates.get(
-                        "filesize" + guildlang) + ': ' + requests.get(arg.url, stream=True).headers['Content-length'])
+                    text=translates.get("filesize" + guildlang) + ': ' + requests.get(arg.url, stream=True).headers[
+                        'Content-length'])
                 await ctx.send(embed=embed)
         except discord.ext.commands.errors.EmojiNotFound:
             embed = discord.Embed(title=translates.get("error" + guildlang),
@@ -128,6 +119,40 @@ class FunCog(commands.Cog, name="Fun module"):
         await ctx.send(
             embed=discord.Embed(color=0xff9900, title="Meme", url='https://www.reddit.com' + str(meme.permalink),
                                 description=str(meme.title)).set_image(url=str(meme.url)))
+
+    @commands.command(name="glitch")
+    async def glitch(self, ctx, arg=None, amount=None):
+        guildlang = getlang(ctx=ctx)
+        try: amount = float(amount)
+        except:
+            if amount is None: amount = 5.0
+            else:
+                await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang), description=translates.get('glitchvalueerr' + guildlang), color=0xFF0000))
+                return
+        imgurl = ""
+        if arg is None:
+            try: imgurl = ctx.message.attachments[0].url
+            except IndexError: imgurl = "https://cdn.discordapp.com/avatars/{0.id}/{0.avatar}.png?size=1024".format(ctx.author)
+        else:
+            try: imgurl = "https://cdn.discordapp.com/avatars/{0.id}/{0.avatar}.png?size=1024".format(await MemberConverter().convert(ctx, arg))
+            except:
+                if str(arg)[:4] == "http": imgurl = arg
+        try:
+            img = Image.open(requests.get(imgurl, stream=True).raw)
+            img = img.copy()
+        except Image.UnidentifiedImageError:
+            await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang), description=translates.get('thisisnotimage' + guildlang), color=0xFF0000))
+            return
+        except requests.exceptions.MissingSchema:
+            await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang), description=translates.get('thisisnotimage' + guildlang), color=0xFF0000))
+            return
+        try: glitch_img = ImageGlitcher().glitch_image(img, amount, color_offset=True)
+        except ValueError:
+            await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang), description=translates.get('glitchvalueerr' + guildlang), color=0xFF0000))
+            return
+        glitch_img.save('./temp/glitch.png')
+        file = discord.File("./temp/glitch.png")
+        await ctx.send(file=file)
 
     @commands.command(name="lyrics")
     async def lyrics(self, ctx, *, arg=None):

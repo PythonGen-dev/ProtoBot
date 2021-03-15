@@ -3,30 +3,11 @@ import json
 import discord
 from discord.ext import commands
 
-from modules import storage
+from modules import storage, getlang, getcustomemote
 
 prefix = json.load(open("config.json", "r"))["prefix"]
 translates = storage("./locals/langs.lang")
 emotes = storage("./locals/emotes.lang")
-
-
-def getcustomemote(self, emote, ctx):
-    user = ctx.guild.get_member(803522872814731264)
-    perms = user.guild_permissions
-    if perms.use_external_emojis:
-        return emotes.get(emote)
-    else:
-        return ''
-
-
-def getlang(ctx):
-    langsdb = storage("./database/langsdb.db")
-    try:
-        guildlang = langsdb.get(str(ctx.guild.id))
-        if guildlang == '0': guildlang = 'EN'
-    except:
-        guildlang = 'EN'
-    return guildlang
 
 
 class HelpCog(commands.Cog, name="help command"):

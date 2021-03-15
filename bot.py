@@ -8,9 +8,8 @@ import discord
 from discord.ext import commands
 
 from modules import storage
-
+cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping"]
 host = socket.gethostname()
-
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
     if host[:7] == 'DESKTOP' or host[:3] == 'WIN':
@@ -18,6 +17,7 @@ with open("config.json", "r") as configjson:
         prefix = configdata["prefixbeta"]
         print('running beta')
     else:
+        cogs.append("cogs.onCommandError")
         token = configdata["token"]
         prefix = configdata["prefix"]
     configjson.close()
@@ -28,7 +28,7 @@ class Bot(commands.Cog):
 
 
 bot = commands.AutoShardedBot(prefix, case_insensitive=True, intents=discord.Intents.all())
-cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping", "cogs.onCommandError"]
+
 
 
 def loadcogs():
@@ -38,7 +38,6 @@ def loadcogs():
             bot.load_extension(cog), print(' ╟─> [SUCCESS] ' + cog)
         except:
             print(' ╟─> [FAILED] ' + cog)
-
     print(' ╚═╝ Load done')
 
 
@@ -64,7 +63,6 @@ async def on_ready():
     print(f"Launch successful.\r\nBot name: {bot.user}")
     await bot.change_presence(status=discord.Status.online)
     while True:
-
         await bot.change_presence(activity=discord.Game("with you"))
         await asyncio.sleep(15)
         await bot.change_presence(activity=discord.Game('bot prefix is: "{}"'.format(prefix)))

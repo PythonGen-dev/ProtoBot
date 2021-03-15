@@ -8,5 +8,6 @@
   "redditclientid": "",
   "redditclientsecret": "",
   "discordbotsggtoken": "",
-  "fetchusertoken": ""
+  "fetchusertoken": "",
+  "herokuapikey": ""
 }

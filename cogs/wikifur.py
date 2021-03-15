@@ -4,18 +4,9 @@ import discord
 from discord.ext import commands
 
 import modules
+from modules import getlang
 
 translates = modules.storage("./locals/langs.lang")
-
-
-def getlang(ctx):
-    langsdb = modules.storage("./database/langsdb.db")
-    try:
-        guildlang = langsdb.get(str(ctx.guild.id))
-        if guildlang == '0': guildlang = 'EN'
-    except:
-        guildlang = 'EN'
-    return guildlang
 
 
 class WikifurCog(commands.Cog, name="wikifur command"):

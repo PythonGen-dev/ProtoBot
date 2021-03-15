@@ -19,3 +19,4 @@ langdetect~=1.0.8
 transliterate~=1.10.2
 praw~=7.2.0
 pillow
+glitch_this

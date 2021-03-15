@@ -1,2 +1,0 @@
-# ProtoBot ReWrite
-### Rewrited ProtoBot

@@ -5,20 +5,9 @@ import discord
 import requests
 from discord.ext import commands
 
-from modules import storage
+from modules import storage, getlang
 
 translates = storage("./locals/langs.lang")
-
-
-def getlang(ctx):
-    langsdb = storage("./database/langsdb.db")
-    try:
-        guildlang = langsdb.get(str(ctx.guild.id))
-        if guildlang == '0': guildlang = 'EN'
-    except:
-        guildlang = 'EN'
-    return guildlang
-
 
 winklist = ['https://i.pinimg.com/originals/1a/3e/80/1a3e80b2d8b08e39d3a7355dc23a88db.gif',
             'https://thumbs.gfycat.com/TinySoftApe-small.gif',

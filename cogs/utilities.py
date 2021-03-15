@@ -1,15 +1,15 @@
+import contextlib
 import datetime
+import io
 import json
 import random
 import socket
-from io import BytesIO
 
 import discord
-from PIL import Image
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
-from modules import storage
+from modules import getcolorfromurl, storage, getlang, getcustomemote
 
 translates = storage("./locals/langs.lang")
 import requests
@@ -19,26 +19,8 @@ with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
     discordbotsggtoken = configdata["discordbotsggtoken"]
     fetchusertoken = configdata["fetchusertoken"]
+    herokuapikey = configdata["herokuapikey"]
     configjson.close()
-
-
-def getcustomemote(self, emote, ctx):
-    user = ctx.guild.get_member(803522872814731264)
-    perms = user.guild_permissions
-    if perms.use_external_emojis:
-        return emotes.get(emote)
-    else:
-        return ''
-
-
-def getlang(ctx):
-    langsdb = storage("./database/langsdb.db")
-    try:
-        guildlang = langsdb.get(str(ctx.guild.id))
-        if guildlang == '0': guildlang = 'EN'
-    except:
-        guildlang = 'EN'
-    return guildlang
 
 
 def filterbots(member):
@@ -79,7 +61,8 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         membersinserver = ctx.guild.members
         botsinserver = list(filter(filterbots, membersinserver))
         botsinservercount = len(botsinserver)
-        embed = discord.Embed(color=0xff9900,
+        colors = getcolorfromurl(ctx.guild.icon_url)
+        embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
                               title=ctx.guild.name + " " + translates.get("serverWord" + guildlang))
         embed.add_field(name=translates.get("usersNametag" + guildlang),
                         value="> **{0}** {1}\r\n > **{2}** {3}\r\n > **{4}** {5}".format(
@@ -89,7 +72,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                             botsinservercount,
                             getcustomemote(self=self, emote='human', ctx=ctx) + translates.get("realUsers" + guildlang),
                             ctx.guild.member_count - botsinservercount,
-                            inline=True))
+                            inline=False))
         embed.add_field(name=translates.get("Channels" + guildlang),
                         value="> **{0}** {1}\r\n > **{2}** {3}\r\n > **{4}** {5}".format(
                             getcustomemote(self=self, emote='AllChannels', ctx=ctx) + translates.get(
@@ -97,29 +80,61 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                             getcustomemote(self=self, emote='VoiceChannels', ctx=ctx) + translates.get(
                                 "VoiceChannels" + guildlang), voice_channel_count,
                             getcustomemote(self=self, emote='TextChannels', ctx=ctx) + translates.get(
-                                "TextChannels" + guildlang), text_channel_count), inline=True)
+                                "TextChannels" + guildlang), text_channel_count), inline=False)
         voiceregion = str(ctx.guild.region)
         verificationlvl = str(ctx.guild.verification_level)
         servowner = await self.bot.fetch_user(ctx.guild.owner_id)
         embed.add_field(name=translates.get("serverInfoRegion" + guildlang),
                         value='> ' + getcustomemote(self=self, emote=voiceregion, ctx=ctx) + translates.get(
                             voiceregion + guildlang),
-                        inline=True)
+                        inline=False)
         embed.add_field(name=translates.get("serverInfoOwner" + guildlang),
-                        value='> ' + getcustomemote(self=self, emote='owner', ctx=ctx) + str(servowner), inline=True)
+                        value='> ' + getcustomemote(self=self, emote='owner', ctx=ctx) + str(servowner), inline=False)
         embed.add_field(name=translates.get("VerificationLevel" + guildlang),
                         value='> ' + getcustomemote(self=self, emote=verificationlvl, ctx=ctx) + translates.get(
                             verificationlvl + guildlang),
-                        inline=True)
-        creationmonth = str(ctx.guild.created_at.strftime("%m"))
-        creationdate = str(ctx.guild.created_at.strftime(
-            "%d " + translates.get(creationmonth + "month" + guildlang) + " %Y" + translates.get(
-                "year" + guildlang) + ", %H:%M:%S"))
-        embed.add_field(name=translates.get("guildCreationDate" + guildlang), value='> ' + str(creationdate),
-                        inline=True)
+                        inline=False)
+        creationdat = ctx.guild.created_at.strftime("%d {0} %Y {1}, %H:%M:%S")
+        creationdateformat = str(creationdat).format(
+            translates.get(str(ctx.guild.created_at.strftime("%m")) + 'month' + guildlang),
+            translates.get('year' + guildlang))
+
+        embed.add_field(name=translates.get("guildCreationDate" + guildlang), value='> ' + str(creationdateformat),
+                        inline=False)
         embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="ID: " + str(ctx.guild.id))
         await ctx.send(embed=embed)
+
+    async def is_owner(ctx):
+        return ctx.author.id == 316026178463072268
+
+    @commands.command()
+    async def eval(self, ctx, *, code):
+        if ctx.author.id == 605354959310946306:
+            a = datetime.datetime.now()
+
+            commandtext = str(ctx.message.content).replace("!= eval ", "").replace("!=eval ", "")
+            str_obj = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(str_obj):
+                    exec(code)
+            except Exception as e:
+                c = datetime.datetime.now() - a
+                embed = discord.Embed(title='EVAL', description="**Time:** `" + str(c.microseconds) + "ms`").add_field(
+                    name='Input:', value=f"""```py\r\n{commandtext}\r\n```""", inline=False).add_field(name='Error:',
+                                                                                                       value=f"""```py\r\n{e.__class__.__name__}: {e}```""")
+                return await ctx.send(embed=embed)
+            c = datetime.datetime.now() - a
+            result = str_obj.getvalue()
+            embed = discord.Embed(title='EVAL', description="**Time:** `" + str(c.microseconds) + "ms`").add_field(
+                name='Input:', value=f"""```py\r\n{commandtext}\r\n```""", inline=False).set_thumbnail(
+                url="https://upload.wikimedia.org/wikipedia/commons/f/f3/Termux_2.png")
+            if len(result) > 1024:
+                result = result[:1012]
+                embed = embed.set_footer(text="The result is more than 1024 characters !!!")
+            embed = embed.add_field(name='Result:', value=f"""```py\r\n{result}\r\n```""").set_thumbnail(
+                url="https://upload.wikimedia.org/wikipedia/commons/f/f3/Termux_2.png")
+            await ctx.send(embed=embed)
 
     @commands.command(name="setlang")
     @commands.has_permissions(administrator=True)
@@ -167,9 +182,10 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
             else:
                 member = await MemberConverter().convert(ctx, userctx)
             if not member.bot:
+                colors = getcolorfromurl(member.avatar_url)
                 userid = member.id
                 userinf = await self.bot.fetch_user(userid)
-                embed = discord.Embed(color=0xff9900,
+                embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
                                       title=translates.get("infoAbout" + guildlang) + ' ' + str(userinf))
                 usersdesc = storage("./database/usersdesc.db")
                 descvalue = usersdesc.get(str(ctx.author.id) + str(ctx.guild.id))
@@ -289,18 +305,15 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         guildlang = getlang(ctx=ctx)
         member = ctx.author if not userctx else userctx
         userinf = await self.bot.fetch_user(member.id)
-        img = Image.open(requests.get(member.avatar_url, stream=True).raw)
-        width, height = Image.open(BytesIO(requests.get(member.avatar_url).content)).size
-        colors = img.getpixel((round(width / 2), round(height / 2)))
+        colors = getcolorfromurl(member.avatar_url)
         if member.is_avatar_animated():
             embed = discord.Embed(color=0xff9900, title=translates.get("userAvatar" + guildlang) + ' ' + str(userinf))
         else:
             embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
                                   title=translates.get("userAvatar" + guildlang) + ' ' + str(userinf))
         embed = embed.set_footer(
-            text=translates.get("width" + guildlang) + ': ' + str(width) + "\r\n" + translates.get(
-                "height" + guildlang) + ': ' + str(height) + "\r\n" + translates.get(
-                "filesize" + guildlang) + ': ' + requests.get(member.avatar_url, stream=True).headers['Content-length'])
+            text=translates.get("filesize" + guildlang) + ': ' + requests.get(member.avatar_url, stream=True).headers[
+                'Content-length'])
         embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
 
@@ -464,10 +477,9 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                      headers={'authorization': 'Bot ' + fetchusertoken})
             avatar = 'https://cdn.discordapp.com/avatars/' + str(r['bot']['id']) + '/' + fetchuser.json()[
                 'avatar'] + ".png"
-            img = Image.open(requests.get(avatar, stream=True).raw)
-            width, height = Image.open(BytesIO(requests.get(avatar).content)).size
-            colors = img.getpixel((round(width / 2), round(height / 2)))
-            embed = discord.Embed(title=fetchuser.json()['username'] + ' bots.topcord.ru', url='https://bots.topcord.ru/bots/' + id,
+            colors = getcolorfromurl(avatar)
+            embed = discord.Embed(title=fetchuser.json()['username'] + ' bots.topcord.ru',
+                                  url='https://bots.topcord.ru/bots/' + id,
                                   color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]))
             embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
             embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')

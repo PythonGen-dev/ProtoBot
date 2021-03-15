@@ -4,9 +4,43 @@ from __future__ import unicode_literals, print_function
 import json
 import os
 import sys
-
+from io import BytesIO
 import requests
+from PIL import Image
 from bs4 import BeautifulSoup
+
+
+def getcustomemote(self, emote, ctx):
+    emotes = storage("./locals/emotes.lang")
+    user = ctx.guild.get_member(803522872814731264)
+    perms = user.guild_permissions
+    if perms.use_external_emojis:
+        return emotes.get(emote)
+    else:
+        return ''
+
+
+def getlang(ctx):
+    langsdb = storage("./database/langsdb.db")
+    try:
+        guildlang = langsdb.get(str(ctx.guild.id))
+        if guildlang == '0': guildlang = 'EN'
+    except:
+        guildlang = 'EN'
+    return guildlang
+
+
+def getcolorfromurl(imgurl):
+    img = Image.open(requests.get(imgurl, stream=True).raw)
+    width, height = Image.open(BytesIO(requests.get(imgurl).content)).size
+    img = img.copy()
+    img.thumbnail((round(width), round(height)))
+    paletted = img.convert('P', palette=Image.ADAPTIVE, colors=1)
+    palette = paletted.getpalette()
+    color_counts = sorted(paletted.getcolors(), reverse=True)
+    palette_index = color_counts[0][1]
+    dominant_color = palette[palette_index * 3:palette_index * 3 + 3]
+    return dominant_color
 
 
 class storage(object):
