@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from modules import storage
-cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping"]
+cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping", "jishaku"]
 host = socket.gethostname()
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
@@ -25,6 +25,14 @@ with open("config.json", "r") as configjson:
 
 class Bot(commands.Cog):
     def __init__(self, bot): self.bot = bot
+
+    async def is_owner(self, user: discord.User):
+        if user.id == 171718:  # Implement your own conditions here
+            return True
+        else:
+
+        # Else fall back to the original
+            return False
 
 
 bot = commands.AutoShardedBot(prefix, case_insensitive=True, intents=discord.Intents.all())

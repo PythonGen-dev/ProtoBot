@@ -15,53 +15,36 @@ class HelpCog(commands.Cog, name="help command"):
         self.bot = bot
 
     @commands.command(name='help')
-    async def help(self, ctx, page=1):
-        guildlang = getlang(ctx=ctx)
-        pages = 2
-        embed = discord.Embed(title='Help',
-                              description='**{}** '.format(translates.get('prefix' + guildlang)) + '`' + str(
-                                  prefix) + '`')
-        if page >= pages: page = pages
-        if page == 1:
-            embed = embed.add_field(name=getcustomemote(self=self, emote='fun', ctx=ctx) + ' {}:'.format(
-                translates.get('funMenu' + guildlang)),
-                                    value='> {0}ASCII - {1}\r\n> {0}image - {2}\r\n> {0}lyrics - {4}\r\n> {0}meme - {5}\r\n> {0}minecraft - {6}\r\n> {0}getemoji - {7}'.format(
-                                        prefix, translates.get('othersAscii' + guildlang),
-                                        translates.get('othersImage' + guildlang),
-                                        translates.get('othersheadsandtails' + guildlang),
-                                        translates.get('othersLyrics' + guildlang),
-                                        translates.get('othersMeme' + guildlang),
-                                        translates.get('othersMinecraft' + guildlang),
-                                        translates.get('othershetemoji' + guildlang)), inline=False)
-            embed = embed.add_field(name=getcustomemote(self=self, emote='paw', ctx=ctx) + ' {}:'.format(
-                translates.get('wikifurMenu' + guildlang)),
-                                    value='> {0}wikifur_search - {1}\r\n> {0}wikifur_display - {2}'.format(
-                                        prefix, translates.get('wikifurSearchInfo' + guildlang),
-                                        translates.get('wikifurDisplayInfo' + guildlang)), inline=False)
-            embed = embed.add_field(name=getcustomemote(self=self, emote='nsfw', ctx=ctx) + ' {}:'.format('NSFW'),
-                                    value='> {0}rule34 - {1}'.format(
-                                        prefix, translates.get('rule34desc' + guildlang)), inline=False)
-        elif page == 2:
-            embed = embed.add_field(name=getcustomemote(self=self, emote='mod', ctx=ctx) + ' {}:'.format(
-                translates.get('settingsMenu' + guildlang)),
-                                    value='> `{0}avatar` - {1}\r\n> `{0}userinfo` - {2}\r\n> `{0}guildinfo` - {3}\r\n> `{0}setlang <ru/en>` - {4}\r\n> `{0}about` - {5}\r\n> `{0}aboutme` - {6}\r\n> `{0}boop` - {7}'.format(
-                                        prefix, translates.get('avatarhelp' + guildlang),
-                                        translates.get('userinfohelp' + guildlang),
-                                        translates.get('guildinfohelp' + guildlang),
-                                        translates.get('setlang' + guildlang),
-                                        translates.get('aboutcommand' + guildlang),
-                                        translates.get('aboutmehelpdesc' + guildlang),
-                                        translates.get('boopdesc' + guildlang)), inline=False)
-            embed = embed.add_field(name=getcustomemote(self=self, emote='senko', ctx=ctx) + ' {}:'.format(
-                translates.get('animeMenu' + guildlang)),
-                                    value='> `{0}hug` - {1}\r\n> `{0}sad` - {2}\r\n> `{0}facepalm` - {3}\r\n> `{0}wink` - {4}\r\n> `{0}pat` - {5}\r\n> `{0}quote` - {6}'.format(
-                                        prefix, translates.get('animehug' + guildlang),
-                                        translates.get('animesad' + guildlang),
-                                        translates.get('animefacepalm' + guildlang),
-                                        translates.get('animewink' + guildlang), translates.get('animepet' + guildlang),
-                                        translates.get('animequote' + guildlang)), inline=False)
-        await ctx.send(
-            embed=embed.set_footer(text='{0}: {1}/{2}'.format(translates.get('helppage' + guildlang), page, pages)))
+    async def helpnew(self, ctx):
+        commands = list()
+        for command in self.bot.commands:
+            if str(command) not in ["devsetlang", "eval", "helpnew", "help", "addbadge", "jishaku"]: commands.append(command.name) # remove dev commands
+        embed = discord.Embed(title='Help',description='**{}** '.format(translates.get('prefix' + getlang(ctx))) + '`' + str(prefix) + '`')
+        anime = ""; utilities = ""; furry = ""; nsfw = ""; others = ""; fun = ""; bots = ""
+        for command in commands:
+            # anime
+            if str(command) in ["quote", "hug", "wink", "pat", "sad", "facepalm"]: anime = anime + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            # utilities
+            elif str(command) in ["avatar", "aboutme", "about", "getemoji", "guildinfo", "userinfo", "boop", "setlang", "PyPI"]: utilities = utilities + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            # furry
+            elif str(command) in ["wikifur_search", "wikifur_display"]: furry = furry + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            # nsfw
+            elif str(command) in ["rule34"]: nsfw = nsfw + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            # fun
+            elif str(command) in ["minecraft", "ascii", "meme", "glitch", "lyrics", "image"]: fun = fun + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            # bots
+            elif str(command) in ["topcord", "discordbots"]: bots = bots + "> {0}{1} - {2}\r\n".format(prefix, command,translates.get(command + "_help_desc_" + getlang(ctx)))
+            # others
+            else: others = others + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+
+        embed = embed.add_field(name=getcustomemote(self=self, emote='senko', ctx=ctx) + ' {}:'.format(translates.get('animeMenu' + getlang(ctx))), value=anime, inline=False)
+        embed = embed.add_field(name=getcustomemote(self=self, emote='mod', ctx=ctx) + ' {}:'.format(translates.get('utilitiesMenu' + getlang(ctx))), value=utilities, inline=False)
+        embed = embed.add_field(name=getcustomemote(self=self, emote='paw', ctx=ctx) + ' {}:'.format(translates.get('furryMenu' + getlang(ctx))), value=furry, inline=False)
+        embed = embed.add_field(name=getcustomemote(self=self, emote='fun', ctx=ctx) + ' {}:'.format(translates.get('funMenu' + getlang(ctx))), value=fun, inline=False)
+        embed = embed.add_field(name=getcustomemote(self=self, emote='bot', ctx=ctx) + ' {}:'.format(translates.get('botsMenu' + getlang(ctx))), value=bots, inline=False)
+        embed = embed.add_field(name=getcustomemote(self=self, emote='nsfw', ctx=ctx) + ' {}:'.format(translates.get('nsfwMenu' + getlang(ctx))), value=nsfw, inline=False)
+        if others != "": embed = embed.add_field(name=":test_tube: " + ' {}:'.format(translates.get('othersMenu' + getlang(ctx))), value=others, inline=False)
+        await ctx.send(embed=embed)
 
 
 def setup(bot):

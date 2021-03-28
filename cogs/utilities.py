@@ -319,19 +319,20 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
     async def pypi(self, ctx, *, arg=None):
         guildlang = getlang(ctx=ctx)
         name = None
-        api = requests.get('https://pypi.python.org/pypi/{}/json'.format(arg.replace(' ', '-'))).json()
+
         try:
+            api = requests.get('https://pypi.python.org/pypi/{}/json'.format(arg.replace(' ', '-'))).json()     
             name = api['info']['name']
         except:
             name = None
         versions = 0
         pypiversion = 0
         latestversion = '0'
-        for i in api['releases']: versions = versions + 1
-        for i in api['releases']:
-            pypiversion = pypiversion + 1
-            if pypiversion == versions: latestversion = i
         if name != None:
+            for i in api['releases']: versions = versions + 1
+            for i in api['releases']:
+                pypiversion = pypiversion + 1
+                if pypiversion == versions: latestversion = i
             embed = discord.Embed(title=name, url='https://pypi.org/project/' + name).set_author(name='PyPI',
                                                                                                  icon_url='https://pbs.twimg.com/profile_images/909757546063323137/-RIWgodF_400x400.jpg')
             embed = embed.add_field(name=translates.get('pypisummary' + guildlang), value=api['info']['summary'])
@@ -343,6 +344,8 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                     value='```' + 'pip install ' + api['info']['name'] + '```',
                                     inline=False)
             await ctx.send(embed=embed)
+        else:
+            await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
 
     @commands.command(name="aboutme")
     async def aboutme(self, ctx, *, args=None):
