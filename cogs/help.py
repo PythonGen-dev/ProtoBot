@@ -20,22 +20,23 @@ class HelpCog(commands.Cog, name="help command"):
         for command in self.bot.commands:
             if str(command) not in ["devsetlang", "eval", "helpnew", "help", "addbadge", "jishaku"]: commands.append(command.name) # remove dev commands
         embed = discord.Embed(title='Help',description='**{}** '.format(translates.get('prefix' + getlang(ctx))) + '`' + str(prefix) + '`')
-        anime = ""; utilities = ""; furry = ""; nsfw = ""; others = ""; fun = ""; bots = ""
+        anime = str(); utilities = str(); furry = str(); nsfw = str(); others = str(); fun = str(); bots = str(); games = str()
         for command in commands:
+            command = str(command)
             # anime
-            if str(command) in ["quote", "hug", "wink", "pat", "sad", "facepalm"]: anime = anime + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            if command in ["quote", "hug", "wink", "pat", "sad", "facepalm"]: anime += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # utilities
-            elif str(command) in ["avatar", "aboutme", "about", "getemoji", "guildinfo", "userinfo", "boop", "setlang", "PyPI"]: utilities = utilities + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["avatar", "aboutme", "about", "getemoji", "guildinfo", "userinfo", "boop", "setlang", "PyPI"]: utilities += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # furry
-            elif str(command) in ["wikifur_search", "wikifur_display"]: furry = furry + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["wikifur_search", "wikifur_display"]: furry += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # nsfw
-            elif str(command) in ["rule34"]: nsfw = nsfw + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["rule34"]: nsfw += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # fun
-            elif str(command) in ["minecraft", "ascii", "meme", "glitch", "lyrics", "image"]: fun = fun + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["minecraft", "ascii", "meme", "glitch", "lyrics", "image"]: fun += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # bots
-            elif str(command) in ["topcord", "discordbots"]: bots = bots + "> {0}{1} - {2}\r\n".format(prefix, command,translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["topcord", "discordbots"]: bots += "> {0}{1} - {2}\r\n".format(prefix, command,translates.get(command + "_help_desc_" + getlang(ctx)))
             # others
-            else: others = others + "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            else: others += "> {0}{1}\r\n".format(prefix, command)
 
         embed = embed.add_field(name=getcustomemote(self=self, emote='senko', ctx=ctx) + ' {}:'.format(translates.get('animeMenu' + getlang(ctx))), value=anime, inline=False)
         embed = embed.add_field(name=getcustomemote(self=self, emote='mod', ctx=ctx) + ' {}:'.format(translates.get('utilitiesMenu' + getlang(ctx))), value=utilities, inline=False)
