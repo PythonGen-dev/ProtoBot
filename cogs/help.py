@@ -26,13 +26,13 @@ class HelpCog(commands.Cog, name="help command"):
             # anime
             if command in ["quote", "hug", "wink", "pat", "sad", "facepalm"]: anime += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # utilities
-            elif command in ["avatar", "aboutme", "about", "getemoji", "guildinfo", "userinfo", "boop", "setlang", "PyPI"]: utilities += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["avatar", "idinfo", "aboutme", "about", "getemoji", "guildinfo", "userinfo", "boop", "setlang", "PyPI"]: utilities += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # furry
             elif command in ["wikifur_search", "wikifur_display"]: furry += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # nsfw
             elif command in ["rule34"]: nsfw += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # fun
-            elif command in ["minecraft", "ascii", "meme", "glitch", "lyrics", "image"]: fun += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
+            elif command in ["minecraft", "compress", "ttt", "ascii", "meme", "twitch", "glitch", "lyrics", "image"]: fun += "> {0}{1} - {2}\r\n".format(prefix, command, translates.get(command + "_help_desc_" + getlang(ctx)))
             # bots
             elif command in ["topcord", "discordbots"]: bots += "> {0}{1} - {2}\r\n".format(prefix, command,translates.get(command + "_help_desc_" + getlang(ctx)))
             # others

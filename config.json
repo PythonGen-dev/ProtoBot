@@ -1,14 +1,1 @@
-{
-  "_comment": "this is a public token, it doesn't work...",
-  "token": "ODIxMDMyMDkyOTcyMjIwNDM2.YE9zuQ.Cu3PQIU_y6-g9bG8sJ7lYH4DlEY",
-  "prefix": "!=",
-  "tokenbeta": "ODIxMDMyMDkyOTcyMjIwNDM2.YE9zuQ.Cu3PQIU_y6-g9bG8sJ7lYH4DlEY",
-  "prefixbeta": "!= ",
-  "unsplashclientid": "",
-  "pixabayapikey": "",
-  "redditclientid": "",
-  "redditclientsecret": "",
-  "discordbotsggtoken": "",
-  "fetchusertoken": "",
-  "herokuapikey": ""
-}
+{"boticordtoken":"","discordbotsggtoken":"","fetchusertoken":"","herokuapikey":"","pixabayapikey":"","prefix":"!=","prefixbeta":"!= ","redditclientid":"","redditclientsecret":"","token":"","tokenbeta":"","twitchclientid":"","unsplashclientid":"","vk_app_id":0,"vk_app_token":""}

@@ -8,6 +8,150 @@ from io import BytesIO
 import requests
 from PIL import Image
 from bs4 import BeautifulSoup
+import struct, zlib, base64
+import os
+import psycopg2
+import database
+DATABASE_URL = os.environ['DATABASE_URL']
+
+
+    
+colorarray = [
+    217, 157, 115,
+    140, 127, 169,
+    235, 238, 245,
+    178, 198, 210,
+    247, 203, 164,
+    39, 39, 39,
+    141, 161, 227,
+    249, 163, 199,
+    119, 119, 119,
+    83, 86, 92,
+    203,217, 127,
+    244,186, 110,
+    243, 233, 121,
+    116, 87, 206,
+    255, 121, 94,
+    255, 170, 95
+    ]
+
+
+tuple_array = [tuple(colorarray[t*3:t*3+3]) for t in range(len(colorarray)//3)]
+palette = Image.new("P", (16, 16))
+palette.putpalette(colorarray*16)
+palette.load()
+
+def quantize(img, dither, transparency_treshold):
+    try:
+        transparency_treshold = int(transparency_treshold)
+    except AttributeError:
+        raise Exception("No image selected")
+    except ValueError:
+        raise Exception("Transparency Treshold must be a number")
+    
+    if transparency_treshold > 255:
+        raise Exception("Transparency Treshold must not exceed 255")
+    elif transparency_treshold < 0:
+        raise Exception("Transparency Treshold most not be negative")
+    
+   
+    img = img.convert("RGBA")
+    imgq = img.convert("RGB") 
+    imgq = imgq._new(imgq.im.convert("P", 1 if dither else 0, palette.im)) 
+
+    imgA = Image.new("RGBA", img.size)
+    pixels = imgA.load()
+    imgq = imgq.convert("RGB")
+    
+    for y in range(img.size[1]):
+        for x in range(img.size[0]):
+            if img.getpixel((x, y))[3] >= transparency_treshold: 
+                pixels[x, y] = imgq.getpixel((x, y))
+            else:
+                pixels[x, y] = (0, 0, 0, 0)
+
+    return imgA
+
+
+
+
+def pix2msch(imgfile               = None,
+             name                  = "schematic",
+             save_location         = None,
+             dither                = True,
+             transparency_treshold = 127,
+             mode                  = "path"
+             ): 
+    
+    tiles = []
+    
+    img = imgfile
+    
+    img = img.rotate(-90, expand=True)
+    
+    
+    width, height = img.size
+    for y in range(height):
+        for x in range(width):
+            if img.getpixel((x, y))[3] > 1:
+                tiles.append((x, y, tuple_array.index(img.getpixel((x, y))[0:3])))
+
+    
+
+    class ByteBuffer(): 
+        def __init__(self, data=bytearray()):
+            self.data = data
+            
+        def writeShort(self, int):
+            self.data += struct.pack(">H", int)
+
+        def writeUTF(self, str):
+            self.writeShort(len(str))
+            self.data += bytes(str.encode("UTF"))
+            
+        def writeByte(self, int):
+            self.data += struct.pack("b", int)
+            
+        def writeInt(self, int):
+            self.data += struct.pack(">i", int)
+            
+   
+    data = ByteBuffer()
+
+    data.writeShort(height)
+    data.writeShort(width)
+
+    data.writeByte(1)
+
+    data.writeUTF("name")
+    data.writeUTF(name)
+
+    data.writeByte(1)
+
+    data.writeUTF("sorter")
+    data.writeInt(len(tiles))
+
+    
+
+    for tile in tiles: 
+        data.writeByte(0)
+        data.writeShort(tile[1])
+        data.writeShort(tile[0])
+        data.writeInt(tile[2])
+        data.writeByte(0)
+
+    
+    
+    
+    if mode == "path":
+        os.chdir(os.path.expandvars(save_location))
+        file = open(name + ".msch", "wb")
+        file.write(b"msch\x00"+zlib.compress(data.data))
+        file.close()
+
+      
+            
+        
 
 
 def getcustomemote(self, emote, ctx):
@@ -20,27 +164,25 @@ def getcustomemote(self, emote, ctx):
         return ''
 
 
-def getlang(ctx):
-    langsdb = storage("./database/langsdb.db")
-    try:
-        guildlang = langsdb.get(str(ctx.guild.id))
-        if guildlang == '0': guildlang = 'EN'
-    except:
-        guildlang = 'EN'
-    return guildlang
-
-
 def getcolorfromurl(imgurl):
     img = Image.open(requests.get(imgurl, stream=True).raw)
     width, height = Image.open(BytesIO(requests.get(imgurl).content)).size
     img = img.copy()
-    img.thumbnail((round(width), round(height)))
-    paletted = img.convert('P', palette=Image.ADAPTIVE, colors=1)
+    img.thumbnail((round(width/2), round(height/2)))
+    paletted = img.convert('P', palette=Image.ADAPTIVE, colors=2)
     palette = paletted.getpalette()
     color_counts = sorted(paletted.getcolors(), reverse=True)
-    palette_index = color_counts[0][1]
-    dominant_color = palette[palette_index * 3:palette_index * 3 + 3]
-    return dominant_color
+    colorone =None
+    colortwo=None
+    ranga=0
+    for i in range(2):
+        ranga = ranga + 1
+        palette_index = color_counts[i][1]
+        dominant_color = palette[palette_index*3:palette_index*3+3]
+        if ranga == 1: colorone = dominant_color
+        else: colortwo = dominant_color
+    if colorone[0] == 0 and colorone[1] == 0 and colorone [2] == 0:  return colortwo
+    else: return colorone
 
 
 class storage(object):
@@ -64,14 +206,6 @@ class storage(object):
             return True
         except:
             return False
-
-    def set(self, key, value):
-        try:
-            self.db[str(key)] = value
-            self.dumpdb()
-        except:
-            return False
-
     def get(self, key):
         try:
             return self.db[key]
@@ -79,9 +213,20 @@ class storage(object):
             return '0'
 
 
+
+
+def getlang(ctx):
+    
+    try:
+        guildlang = database.getrow("LANGUAGES", "GUILDID", "VALUE", str(ctx.guild.id))[1]
+        
+    except:
+        guildlang = 'EN'
+    
+    return str(guildlang)
+
 API_URL = 'http://en.wikifur.com/w/api.php'
 ODD_ERROR_MESSAGE = "This shouldn't happen. Please report on GitHub"
-
 
 class wikifurException(Exception):
     def __init__(self, error):

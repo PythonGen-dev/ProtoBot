@@ -3,16 +3,17 @@ import datetime
 import json
 import socket
 import time
-
+import os
 import discord
 from discord.ext import commands
-
 from modules import storage
-cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping", "jishaku"]
+import database
+betamode = False
+cogs = ["cogs.help", "cogs.wikifur", "cogs.anime", "cogs.fun", "cogs.utilities", "cogs.ping", "jishaku", "cogs.games.tictactoe"]
 host = socket.gethostname()
 with open("config.json", "r") as configjson:
     configdata = json.load(configjson)
-    if host[:7] == 'DESKTOP' or host[:3] == 'WIN':
+    if host[:7] == 'DESKTOP' or host[:3] == 'WIN' or betamode == True:
         token = configdata["tokenbeta"]
         prefix = configdata["prefixbeta"]
         print('running beta')
@@ -42,27 +43,17 @@ bot = commands.AutoShardedBot(prefix, case_insensitive=True, intents=discord.Int
 def loadcogs():
     print(" ╔═╗ Loading cogs")
     for cog in cogs:
-        try:
-            bot.load_extension(cog), print(' ╟─> [SUCCESS] ' + cog)
-        except:
-            print(' ╟─> [FAILED] ' + cog)
+        if betamode:
+            bot.load_extension(cog)
+        else:
+            try:
+                bot.load_extension(cog), print(' ╟─> [SUCCESS] ' + cog)
+            except:
+                print(' ╟─> [FAILED] ' + cog)
     print(' ╚═╝ Load done')
 
 
-@bot.event
-async def on_member_join(member):
-    if str(member.guild.id) == '803522604820070440':
-        badges = storage("./database/badges.db")
-        badgesdata = str(badges.get(str(member.id)))
-        badgeslist = badgesdata.split("$")
-        if "300" in badgeslist:
-            print("")
-        else:
-            if str(badges.get(str(id))) == '0':
-                badges.set(str(id), '300')
-            else:
-                data = badges.get(str(id))
-                badges.set(str(id), data + "$" + '300')
+
 
 
 @bot.event
@@ -89,6 +80,13 @@ async def on_ready():
             activity=discord.Game('uptime {}'.format(str(datetime.timedelta(seconds=difference)))))
         await asyncio.sleep(15)
 
+
+@bot.event
+async def on_guild_join(guild):
+    region = str(guild.region)
+    if region == "russia":
+        database.upsert("LANGUAGES", "GUILDID", "VALUE", str(guild.id), "RU")
+            
 
 loadcogs()
 bot.run(token)

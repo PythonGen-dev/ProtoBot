@@ -68,7 +68,7 @@ class AnimeCog(commands.Cog, name="anime cog"):
 
     @commands.command(name="facepalm")
     async def facepalm(self, ctx, user: discord.Member = None):
-        if user is None:
+        if user is None or user == ctx.author:
             mention = ''
         else:
             mention = user.mention
@@ -79,7 +79,7 @@ class AnimeCog(commands.Cog, name="anime cog"):
 
     @commands.command(name="hug")
     async def hug(self, ctx, user: discord.Member = None):
-        if user is None:
+        if user is None or user == ctx.author:
             mention = ''
         else:
             mention = user.mention
@@ -90,7 +90,7 @@ class AnimeCog(commands.Cog, name="anime cog"):
 
     @commands.command(name="wink")
     async def wink(self, ctx, user: discord.Member = None):
-        if user is None:
+        if user is None or user == ctx.author:
             mention = ''
         else:
             mention = user.mention
@@ -101,7 +101,7 @@ class AnimeCog(commands.Cog, name="anime cog"):
 
     @commands.command(name="pat")
     async def pat(self, ctx, user: discord.Member = None):
-        if user is None:
+        if user is None or user == ctx.author:
             mention = ''
         else:
             mention = user.mention

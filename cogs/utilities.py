@@ -4,13 +4,13 @@ import io
 import json
 import random
 import socket
-
+import database
+import time
 import discord
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from modules import getcolorfromurl, storage, getlang, getcustomemote
-
 translates = storage("./locals/langs.lang")
 import requests
 
@@ -20,6 +20,8 @@ with open("config.json", "r") as configjson:
     discordbotsggtoken = configdata["discordbotsggtoken"]
     fetchusertoken = configdata["fetchusertoken"]
     herokuapikey = configdata["herokuapikey"]
+    boticordtoken = configdata["boticordtoken"]
+    twitchclientid = configdata["twitchclientid"]
     configjson.close()
 
 
@@ -31,14 +33,17 @@ prefix = json.load(open("config.json", "r"))["prefix"]
 
 
 def getmonth(date, lang):
-    month = list(str(datetime.datetime.now() - date).split(",")[0].split(" "))
-    if month[1] == 'days':
-        rounded = str(round(int(month[0]) / 30))
-        if rounded == '1':
-            return rounded + ' ' + translates.get('monthlow' + lang)
+    try:
+        month = list(str(datetime.datetime.now() - date).split(",")[0].split(" "))
+        if month[1] == 'days':
+            rounded = str(round(int(month[0]) / 30))
+            if rounded == '1':
+                return rounded + ' ' + translates.get('monthlow' + lang)
+            else:
+                return rounded + ' ' + translates.get('monthsmore' + lang)
         else:
-            return rounded + ' ' + translates.get('monthsmore' + lang)
-    else:
+            return '0 ' + translates.get('monthsmore' + lang)
+    except:
         return '0 ' + translates.get('monthsmore' + lang)
 
 
@@ -49,6 +54,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
     @commands.command(name="guildinfo")
     async def guildinfo(self, ctx):
         guildlang = getlang(ctx=ctx)
+        colors= [0, 191, 255]
         text_channel_list = []
         voice_channel_list = []
         for channel in ctx.guild.text_channels:
@@ -61,7 +67,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         membersinserver = ctx.guild.members
         botsinserver = list(filter(filterbots, membersinserver))
         botsinservercount = len(botsinserver)
-        colors = getcolorfromurl(ctx.guild.icon_url)
+        if str(ctx.guild.icon_url) != "":colors = getcolorfromurl(ctx.guild.icon_url)
         embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
                               title=ctx.guild.name + " " + translates.get("serverWord" + guildlang))
         embed.add_field(name=translates.get("usersNametag" + guildlang),
@@ -73,6 +79,18 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                             getcustomemote(self=self, emote='human', ctx=ctx) + translates.get("realUsers" + guildlang),
                             ctx.guild.member_count - botsinservercount,
                             inline=False))
+        offlinecount=0; onlinecount=0; idlecount=0; dndcount=0
+        for I in ctx.guild.members:
+            if str(I.status) == "offline": offlinecount = offlinecount+1
+            elif str(I.status) == "online": onlinecount = onlinecount+1
+            elif str(I.status) == "idle": idlecount = idlecount+1
+            else: dndcount=dndcount+1
+        statusort = str()
+        statusort += "> "+getcustomemote(self=self, emote='online', ctx=ctx)+translates.get("online" + guildlang)+": "+str(onlinecount)+"\r\n"
+        statusort += "> "+getcustomemote(self=self, emote='idle', ctx=ctx)+translates.get("idle" + guildlang)+": "+str(idlecount)+"\r\n"
+        statusort += "> "+getcustomemote(self=self, emote='dnd', ctx=ctx)+translates.get("dnd" + guildlang)+": "+str(dndcount)+"\r\n"
+        statusort += "> "+getcustomemote(self=self, emote='offline', ctx=ctx)+translates.get("offline" + guildlang)+": "+str(offlinecount)+"\r\n"        
+        embed.add_field(name=translates.get("usersstatussort" + guildlang), value = statusort, inline=False)
         embed.add_field(name=translates.get("Channels" + guildlang),
                         value="> **{0}** {1}\r\n > **{2}** {3}\r\n > **{4}** {5}".format(
                             getcustomemote(self=self, emote='AllChannels', ctx=ctx) + translates.get(
@@ -101,10 +119,47 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
 
         embed.add_field(name=translates.get("guildCreationDate" + guildlang), value='> ' + str(creationdateformat),
                         inline=False)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
+        if str(ctx.guild.icon_url) != "": embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="ID: " + str(ctx.guild.id))
         await ctx.send(embed=embed)
 
+
+
+    @commands.command(name="twitch")
+    async def twitch(self, ctx, user = None):
+        guildlang = getlang(ctx=ctx)
+        if user is None:
+            await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
+            return
+        headers = {"Accept": "application/vnd.twitchtv.v5+json", "Client-ID": twitchclientid}
+        r=requests.get(url="https://api.twitch.tv/kraken/users?login="+user, headers=headers)
+        jsondata=r.json()
+        try:
+            user = jsondata["users"][0]
+
+        except IndexError:
+            embed = discord.Embed(color = 0x6441a5, title = translates.get("twitchaccnotfound"+guildlang))
+            await ctx.send(embed=embed)
+            return
+        logo = user["logo"]
+        display_name = user["display_name"]
+        id = user["_id"]
+        r=requests.get(url="https://api.twitch.tv/kraken/streams/"+id, headers=headers)
+        try:
+            stream=r.json()["stream"]
+            preview=stream["preview"]["large"]
+        except:
+            embed = discord.Embed(color = 0x6441a5, title = display_name+" "+translates.get("dontstreaming"+guildlang))
+            embed = embed.set_author(icon_url = logo, name = display_name)
+            await ctx.send(embed=embed)
+            return
+        
+        embed = discord.Embed(color = 0x6441a5, title = display_name+" "+translates.get("nowlive"+guildlang))
+        embed = embed.set_author(icon_url = logo, name = display_name)
+        embed = embed.add_field(name = translates.get("nowplaying"+guildlang), value=stream["game"])
+        embed = embed.add_field(name = translates.get("spectators"+guildlang), value=stream["viewers"])
+        embed = embed.set_image(url=preview)
+        await ctx.send(embed = embed)
 
     @commands.command()
     async def eval(self, ctx, *, code):
@@ -138,41 +193,51 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
     @commands.has_permissions(administrator=True)
     async def setlang(self, ctx, arg=None):
         language = None
+
         if arg is None:
             await ctx.send(embed=discord.Embed(description='No arguments', title='Error'))
             return ()
-        elif arg == "en":
+        elif str(arg).lower() == "en":
             language = "EN"
-        elif arg == "ru":
+        elif str(arg).lower() == "ru":
             language = "RU"
         if language is not None:
-            langsdb = storage("./database/langsdb.db")
-            langsdb.set(str(ctx.guild.id), language)
+            database.upsert("LANGUAGES", "GUILDID", "VALUE", str(ctx.guild.id), language)
+            
             await ctx.send(embed=discord.Embed(description='Language set to: ' + language, title='Successful'))
         else:
             await ctx.send(embed=discord.Embed(description='Invalid argument', title='Error'))
 
-    @commands.command(name="devsetlang")
-    async def devsetlang(self, ctx, arg=None):
-        if str(ctx.author.id) == "605354959310946306":
-            language = None
-            if arg is None:
-                await ctx.send(embed=discord.Embed(description='No arguments', title='Error'))
-                return ()
-            elif arg == "en":
-                language = "EN"
-            elif arg == "ru":
-                language = "RU"
-            if language is not None:
-                langsdb = storage("./database/langsdb.db")
-                langsdb.set(str(ctx.guild.id), language)
-                await ctx.send(embed=discord.Embed(description='Language set to: ' + language, title='Successful'))
-            else:
-                await ctx.send(embed=discord.Embed(description='Invalid argument', title='Error'))
+
+    @commands.command(name="idinfo")
+    async def userinfobyid(self, ctx, userid = None):
+        guildlang = getlang(ctx)
+        if userid is None:
+            await ctx.send(embed=discord.Embed(description='No arguments', title='Error'))
+        else:
+            try:
+                data = requests.get(url="https://discordapp.com/api/v8/users/" + userid,  headers={'authorization': 'Bot ' + fetchusertoken}).json()
+                avatarurl = "https://cdn.discordapp.com/avatars/{0[id]}/{0[avatar]}.png?size=1024".format(data)
+                username = "{0[username]}#{0[discriminator]}".format(data)
+                created_at = datetime.datetime.utcfromtimestamp(((int(data["id"]) >> 22) + 1420070400000) / 1000).replace(tzinfo=None)
+                colors = getcolorfromurl(avatarurl)
+                usercreationdate = created_at.strftime("%d {0} %Y {1}, %H:%M:%S")
+                usercreationdateformat = str(usercreationdate).format(translates.get(str(created_at.strftime("%m")) + 'month' + guildlang), translates.get('year' + guildlang))
+                embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]), title=translates.get("infoAbout" + guildlang) + ' ' + str(username))
+                embed = embed.add_field(name=translates.get("basicInfo" + guildlang), value='⬢** {0}**\r\n > {1}\r\n⬢** {2}**\r\n > {3} ({4})'.format(translates.get("userInfoUsername" + guildlang), username, translates.get("userinfoAccCreated" + guildlang), usercreationdateformat, getmonth(date=created_at, lang=guildlang)), inline=False)
+                embed.set_footer(text="ID: " + str(userid))
+                embed.set_thumbnail(url=avatarurl)
+                await ctx.send(embed=embed)
+            except:
+                embed = discord.Embed(title=translates.get("error" + guildlang), description=translates.get("notFound" + guildlang)[:-1])
+                await ctx.send(embed=embed)
+                            
+            
 
     @commands.command(name="userinfo")
     async def userinfo(self, ctx, userctx=None):
         guildlang = getlang(ctx=ctx)
+        colors= [0, 191, 255]
         try:
             spotify = "0"
             if not userctx:
@@ -180,13 +245,14 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
             else:
                 member = await MemberConverter().convert(ctx, userctx)
             if not member.bot:
-                colors = getcolorfromurl(member.avatar_url)
+                if str(member.avatar_url) != "": colors = getcolorfromurl(member.avatar_url)
                 userid = member.id
                 userinf = await self.bot.fetch_user(userid)
                 embed = discord.Embed(color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]),
                                       title=translates.get("infoAbout" + guildlang) + ' ' + str(userinf))
-                usersdesc = storage("./database/usersdesc.db")
-                descvalue = usersdesc.get(str(ctx.author.id) + str(ctx.guild.id))
+                try:
+                   descvalue = str(database.getrow(tablename="USERDESCS", firstname="GUILDIDandUSERID", secondname ="VALUE", rowid=str(ctx.author.id) + str(ctx.guild.id))[1])
+                except: descvalue = "0"
                 if ctx.author.id == userid:
                     if descvalue == '0':
                         embed.add_field(name=translates.get('userdescriptiontitle' + guildlang),
@@ -239,23 +305,9 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                     translates.get("userinfoStatus" + guildlang), activityemote + str(status),
                                     translates.get("customactivity" + guildlang), customactivitystr), inline=False)
                 embed.set_footer(text="ID: " + str(userid))
-                embed.set_thumbnail(url=member.avatar_url)
-                badges = storage("./database/badges.db")
-                badgesdata = str(badges.get(str(userid)))
-                if badgesdata != "0":
-                    badgeslist = badgesdata.split("$")
-                    badgesstr = ''
-                    for i in badgeslist:
-                        if badgesstr == '':
-                            badgesstr = badgesstr + "> " + getcustomemote(self=self, emote=i + 'badge',
-                                                                          ctx=ctx) + ' ' + translates.get(
-                                i + 'badge' + guildlang)
-                        else:
-                            badgesstr = badgesstr + "\r\n" + '> ' + getcustomemote(self=self, emote=i + 'badge',
-                                                                                   ctx=ctx) + ' ' + translates.get(
-                                i + 'badge' + guildlang)
-                    embed = embed.add_field(name='⬢** {0}**'.format(translates.get('badges' + guildlang)),
-                                            value=badgesstr)
+                if str(member.avatar_url) != "": embed.set_thumbnail(url=member.avatar_url)
+                
+                
                 roles = ', '.join([role.mention for role in member.roles[1:]])
                 if roles != '':
                     embed.add_field(
@@ -273,30 +325,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
                                   description=translates.get("usernotfound" + guildlang))
             await ctx.send(embed=embed)
 
-    @commands.command(name="addbadge")
-    async def addbadge(self, ctx, arg, userctx=None):
-        id = ctx.author.id
-        if str(id) == '605354959310946306':
-            guildlang = getlang(ctx=ctx)
-            badges = storage("./database/badges.db")
-            embed = discord.Embed(title='Added', description=getcustomemote(self=self, emote=arg + 'badge',
-                                                                            ctx=ctx) + ' ' + translates.get(
-                arg + 'badge' + guildlang))
-            if not userctx:
-                member = ctx.author
-            else:
-                member = await MemberConverter().convert(ctx, userctx)
-                embed.set_author(name=member.id, icon_url=member.avatar_url)
-            id = member.id
-            badgesdata = str(badges.get(str(id)))
-            badgeslist = badgesdata.split("$")
-            if arg not in badgeslist:
-                if str(badges.get(str(id))) == '0':
-                    badges.set(str(id), arg)
-                else:
-                    data = badges.get(str(id))
-                    badges.set(str(id), data + "$" + arg)
-            await ctx.send(embed=embed)
+
 
     @commands.command(name="avatar")
     async def avatar(self, ctx, userctx: discord.Member = None):
@@ -353,8 +382,8 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         if args is None:
             await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
         else:
-            usersdesc = storage("./database/usersdesc.db")
-            usersdesc.set(str(ctx.author.id) + str(ctx.guild.id), args[:256])
+            
+            database.upsert("USERDESCS", "GUILDIDandUSERID", "VALUE", str(ctx.author.id) + str(ctx.guild.id), args[:256])
             embed = discord.Embed(title=translates.get('userdescriptionsetted' + guildlang),
                                   description=str(args[:256]))
             await ctx.send(embed=embed)
@@ -428,106 +457,132 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
     @commands.command(name="topcord")
     async def topcord(self, ctx, *, arg=None):
         guildlang = getlang(ctx=ctx)
-        try:
-            bot = await MemberConverter().convert(ctx, arg)
-            if bot.bot:
-                id = str(bot.id)
-            else:
+        if arg != None:
+            try:
+                bot = await MemberConverter().convert(ctx, arg)
+                if bot.bot:
+                    id = str(bot.id)
+                else:
+                    embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                          description=translates.get("thisisnotbot" + guildlang), colour=0xFF0000)
+                    embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                    embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                    await ctx.send(embed=embed)
+                    return
+
+            except:
+                id = str(arg)
+            url = "http://bots.topcord.ru/api/"
+            try:
+                r = requests.get(url + str(id), timeout=4).json()
+            except requests.exceptions.ReadTimeout:
                 embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
-                                      description=translates.get("thisisnotbot" + guildlang), colour=0xFF0000)
+                                      description='Read timed out.', colour=0xFF0000)
                 embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
                 embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
                 await ctx.send(embed=embed)
                 return
-
-        except:
-            id = str(arg)
-        url = "http://bots.topcord.ru/api/"
-        try:
-            r = requests.get(url + str(id), timeout=4).json()
-        except requests.exceptions.ReadTimeout:
-            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
-                                  description='Read timed out.', colour=0xFF0000)
-            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
-            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
-            await ctx.send(embed=embed)
-            return
-        except OSError:
-            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
-                                  description='Failed to establish a new connection.', colour=0xFF0000)
-            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
-            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
-            await ctx.send(embed=embed)
-            return
-        except:
-            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
-                                  description='Failed to establish a new connection.', colour=0xFF0000)
-            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
-            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
-            await ctx.send(embed=embed)
-            return
-        try:
-            embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/')
-            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
-            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
-            e = r['error']
-            embed.add_field(name=translates.get('error' + guildlang),
-                            value=translates.get("notFound" + guildlang)[:-1])
-        except:
-            fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r['bot']['id']),
-                                     headers={'authorization': 'Bot ' + fetchusertoken})
-            avatar = 'https://cdn.discordapp.com/avatars/' + str(r['bot']['id']) + '/' + fetchuser.json()[
-                'avatar'] + ".png"
-            colors = getcolorfromurl(avatar)
-            embed = discord.Embed(title=fetchuser.json()['username'] + ' bots.topcord.ru',
-                                  url='https://bots.topcord.ru/bots/' + id,
-                                  color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]))
-            embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
-            embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
-            for i in r:
-                if i in ['customInvite', 'bot', 'owner', 'botWebsite', 'date', 'botTags', 'upvotes']:
-                    if i == 'bot':
-                        embed.add_field(name=translates.get('botname' + guildlang),
-                                        value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'],
-                                        inline=False)
-                        embed.set_thumbnail(url=avatar)
-                    elif i == 'owner':
-                        fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']),
-                                                 headers={'authorization': 'Bot ' + fetchusertoken})
-                        embed.add_field(name=translates.get('serverOwner' + guildlang),
-                                        value=fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator'],
-                                        inline=False)
-                    elif i == 'customInvite':
-                        embed.add_field(name=translates.get('botinvite' + guildlang),
-                                        value=translates.get('clickhere' + guildlang) + '(' + r[i] + ')', inline=False)
-                    elif i == 'botTags':
-                        if str(r[i]) != "[]":
-                            tags = ""
+            except OSError:
+                embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                      description='Failed to establish a new connection.', colour=0xFF0000)
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                await ctx.send(embed=embed)
+                return
+            except:
+                embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                      description='Failed to establish a new connection.', colour=0xFF0000)
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                await ctx.send(embed=embed)
+                return
+            try:
+                embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/')
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                e = r['error']
+                embed.add_field(name=translates.get('error' + guildlang),
+                                value=translates.get("notFound" + guildlang)[:-1])
+            except:
+                fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r['bot']['id']),
+                                         headers={'authorization': 'Bot ' + fetchusertoken})
+                avatar = 'https://cdn.discordapp.com/avatars/' + str(r['bot']['id']) + '/' + fetchuser.json()[
+                    'avatar'] + ".png"
+                colors = getcolorfromurl(avatar)
+                embed = discord.Embed(title=fetchuser.json()['username'] + ' bots.topcord.ru',
+                                      url='https://bots.topcord.ru/bots/' + id,
+                                      color=discord.Colour.from_rgb(colors[0], colors[1], colors[2]))
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                for i in r:
+                    if i in ['customInvite', 'bot', 'owner', 'botWebsite', 'date', 'botTags', 'upvotes']:
+                        if i == 'bot':
+                            embed.add_field(name=translates.get('botname' + guildlang),
+                                            value="<@{0}> `(".format(fetchuser.json()['id'])+fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator']+")`",
+                                            inline=False)
+                            embed.set_thumbnail(url=avatar)
+                        elif i == 'owner':
+                            fetchuser = requests.get(url='https://discordapp.com/api/v6/users/' + str(r[i]['id']),
+                                                     headers={'authorization': 'Bot ' + fetchusertoken})
+                            embed.add_field(name=translates.get('serverOwner' + guildlang),
+                                            value="<@{0}> `(".format(fetchuser.json()['id'])+fetchuser.json()['username'] + '#' + fetchuser.json()['discriminator']+")`",
+                                            inline=False)
+                        elif i == 'customInvite':
+                            embed.add_field(name=translates.get('botinvite' + guildlang),
+                                            value=translates.get('clickhere' + guildlang) + '(' + r[i] + ')', inline=False)
+                        elif i == 'botTags':
+                            if str(r[i]) != "[]":
+                                tags = ""
+                                for t in r[i]:
+                                    if tags == "":
+                                        tags = translates.get(t + "tag" + guildlang) + ", "
+                                    else:
+                                        tags = tags + translates.get(t + "tag" + guildlang) + ", "
+                                if tags[-2] == ',': tags = tags[:-2]
+                                embed.add_field(name=translates.get('tags' + guildlang), value=tags, inline=False)
+                        elif i == 'upvotes':
+                            embed.add_field(name=translates.get('upvotes' + guildlang), value=r[i], inline=False)
+                        elif i == 'date':
                             for t in r[i]:
-                                if tags == "":
-                                    tags = translates.get(t + "tag" + guildlang) + ", "
-                                else:
-                                    tags = tags + translates.get(t + "tag" + guildlang) + ", "
-                            if tags[-2] == ',': tags = tags[:-2]
-                            embed.add_field(name=translates.get('tags' + guildlang), value=tags, inline=False)
-                    elif i == 'upvotes':
-                        embed.add_field(name=translates.get('upvotes' + guildlang), value=r[i], inline=False)
-                    elif i == 'date':
-                        for t in r[i]:
-                            date = str(str(r[i][t]).split(' ')[0]).split("-")
-                            date = date[2] + ' ' + translates.get(date[1] + 'month' + guildlang) + ' ' + date[
-                                0] + ' ' + translates.get('year' + guildlang)
-                            embed.add_field(name=translates.get(t + 'topcord' + guildlang), value=date, inline=False)
-                else:
-                    if i == 'prefix':
-                        embed.add_field(name=translates.get('prefix' + guildlang), value=r[i], inline=False)
-                    elif i == 'shortDesc':
-                        embed.add_field(name=translates.get('description' + guildlang), value=r[i],
-                                        inline=False)
+                                date = str(str(r[i][t]).split(' ')[0]).split("-")
+                                date = date[2] + ' ' + translates.get(date[1] + 'month' + guildlang) + ' ' + date[
+                                    0] + ' ' + translates.get('year' + guildlang)
+                                embed.add_field(name=translates.get(t + 'topcord' + guildlang), value=date, inline=False)
                     else:
-                        embed.add_field(name=i, value=r[i], inline=False)
-        await ctx.send(embed=embed)
+                        if i == 'prefix':
+                            embed.add_field(name=translates.get('prefix' + guildlang), value="`"+str(r[i])+"`", inline=False)
+                        elif i == 'shortDesc':
+                            embed.add_field(name=translates.get('description' + guildlang), value=r[i],
+                                            inline=False)
+                        else:
+                            embed.add_field(name=i, value=r[i], inline=False)
+            await ctx.send(embed=embed)
+        else:
+            try:
+                before = time.monotonic()
+                r=requests.get("https://bots.topcord.ru/api").json()
+                ping = (time.monotonic() - before) * 1000
+                desc = str()
+                desc += translates.get('totalbots' + guildlang)+" {0}\r\n".format(r["bots"])
+                desc += translates.get('parciseping' + guildlang)+" {0}ms\r\n".format(r["botping"])
+                desc += translates.get('apilatency' + guildlang)+" {0}ms\r\n".format(str(int(ping)))
 
+                desc += translates.get('apiver' + guildlang)+" {0}\r\n".format(r["version"])
+
+                embed = discord.Embed(title=translates.get('topcordstats' + guildlang), url='https://bots.topcord.ru/', description=desc, color = 0x7289DA)
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+
+                await ctx.send(embed=embed)
+                
+
+            except:
+                embed = discord.Embed(title='bots.topcord.ru', url='https://bots.topcord.ru/',
+                                      description='Failed to establish a new connection.', colour=0xFF0000)
+                embed.set_author(icon_url='https://bots.topcord.ru/assets/logo.png', name='bots.topcord.ru')
+                embed.set_thumbnail(url='https://bots.topcord.ru/assets/logo.png')
+                await ctx.send(embed=embed)
+                return
     @commands.command(name="about")
     async def about(self, ctx):
         global prefix
@@ -542,7 +597,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         servers = list(self.bot.guilds)
         embed = discord.Embed(color=0xff9900, title=self.bot.user.name + ' ' + translates.get('bot' + guildlang),
                               description=translates.get('aboutdesc' + guildlang) + '\r\n\r\n' + translates.get(
-                                  'helplistend' + guildlang).replace('!=', str(prefix)) + '\r\n')
+                                  'helplistend' + guildlang).replace('!= ', str(prefix)) + '\r\n')
         embed.add_field(name=translates.get('owner' + guildlang),
                         value=getcustomemote(self=self, emote='botowner', ctx=ctx) + 'PythonGen#9053', inline=True)
         embed.add_field(name=translates.get('library' + guildlang), value=getcustomemote(self=self, emote='libraryicon',
@@ -551,7 +606,7 @@ class UtilitiesCog(commands.Cog, name="Utilities Cog"):
         embed.add_field(name=translates.get('prefix' + guildlang), value='`' + prefix + '`', inline=True)
         embed.add_field(name=translates.get('host' + guildlang), value=host, inline=True)
         embed.add_field(name=translates.get('totalguilds' + guildlang), value=str(len(servers)), inline=True)
-        embed.add_field(name=translates.get('botversion' + guildlang), value='ReWrite 1.0 alpha', inline=True)
+        embed.add_field(name=translates.get('botversion' + guildlang), value='ReWrite 1.3.5', inline=True)
         embed.add_field(name=translates.get('used' + guildlang),
                         value='[[Wikipedia]](https://pypi.org/project/wikipedia/)', inline=True)
         embed.add_field(name=translates.get('supportserver' + guildlang),

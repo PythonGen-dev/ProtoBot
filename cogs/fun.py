@@ -10,7 +10,9 @@ from discord.ext import commands
 from discord.ext.commands import MemberConverter
 from langdetect import detect
 from transliterate import translit
-
+import modules
+import vk_api
+from random import randint
 from modules import getcolorfromurl, storage, getlang
 
 with open("config.json", "r") as configjson:
@@ -19,10 +21,49 @@ with open("config.json", "r") as configjson:
     pixabayapikey = configdata["pixabayapikey"]
     redditclientid = configdata["redditclientid"]
     redditclientsecret = configdata["redditclientsecret"]
+    vk_app_id = configdata["vk_app_id"]
+    vk_app_token = configdata["vk_app_token"]
+
     configjson.close()
 reddit = praw.Reddit(client_id=redditclientid, client_secret=redditclientsecret, user_agent='protobot',
                      check_for_async=False)
 translates = storage("./locals/langs.lang")
+
+def vk_api_login():
+    vk_session = vk_api.VkApi(app_id=vk_app_id, token=vk_app_token)
+    vk = vk_session.get_api()
+    return vk    
+def get_posts_count(domain):
+    count = vk_api_login().wall.get(count=1, domain = domain)["count"]
+    return count
+def get_random_post(domain):
+    count = get_posts_count(domain)-1
+    offset = randint (0, count)
+    post = vk_api_login().wall.get(count=1, offset = offset, domain = domain)
+    return post["items"][0]
+def get_random_post_no_ads(domain):
+    post = get_random_post(domain)
+    loop = True
+    if str(post["marked_as_ads"]) == "1":
+        while loop == True:
+            post = get_random_post(domain)
+            if str(post["marked_as_ads"]) == "0":
+                return post
+    else: 
+        return post
+def get_random_post_attachment_no_ads(domain):
+    post = get_random_post_no_ads(domain)
+    loop = True
+    if len(post["attachments"]) != 1:
+        while loop == True:
+            post = get_random_post(domain)
+            if len(post["attachments"]) == 1:
+                return post
+    else: 
+        return post
+def get_photo_max_scale(post):
+    data = post["attachments"][0]["photo"]["sizes"][-1]
+    return data["url"]
 
 
 class FunCog(commands.Cog, name="Fun module"):
@@ -88,6 +129,39 @@ class FunCog(commands.Cog, name="Fun module"):
                                   description=translates.get("unkarg" + guildlang))
             await ctx.send(embed=embed)
 
+
+
+    @commands.command(name="pixelate")
+    async def pixelate(self, ctx, arg=None):
+        guildlang = getlang(ctx=ctx)
+        imgurl = ""
+        if arg is None:
+            try: imgurl = ctx.message.attachments[0].url
+            except IndexError: imgurl = "https://cdn.discordapp.com/avatars/{0.id}/{0.avatar}.png?size=1024".format(ctx.author)
+        else:
+            try: imgurl = "https://cdn.discordapp.com/avatars/{0.id}/{0.avatar}.png?size=1024".format(await MemberConverter().convert(ctx, arg))
+            except:
+                if str(arg)[:4] == "http": imgurl = arg
+        try:
+            img = Image.open(requests.get(imgurl, stream=True).raw)
+            img = img.copy()
+        except Image.UnidentifiedImageError:
+            await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang), description=translates.get('thisisnotimage' + guildlang), color=0xFF0000))
+            return
+        except requests.exceptions.MissingSchema:
+            await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang), description=translates.get('thisisnotimage' + guildlang), color=0xFF0000))
+            return
+        pixelsize = 8
+        width, height = img.size
+        imgSmall = img.resize((round(width/pixelsize), round(height/pixelsize)),resample=Image.BILINEAR)
+        result = imgSmall.resize(img.size,Image.NEAREST)
+        
+        result.save('./temp/pixelate.png')
+        file = discord.File("./temp/pixelate.png")
+        
+        await ctx.send(file=file)
+
+
     @commands.command(name="ascii")
     async def ascii(self, ctx, *, arg=None):
         guildlang = getlang(ctx=ctx)
@@ -115,10 +189,15 @@ class FunCog(commands.Cog, name="Fun module"):
 
     @commands.command(name="meme")
     async def meme(self, ctx):
-        meme = reddit.subreddit("memes").random()
-        await ctx.send(
-            embed=discord.Embed(color=0xff9900, title="Meme", url='https://www.reddit.com' + str(meme.permalink),
-                                description=str(meme.title)).set_image(url=str(meme.url)))
+        guildlang = getlang(ctx=ctx)
+        if str(guildlang) == "EN":
+            meme = reddit.subreddit("memes").random()
+            await ctx.send(embed=discord.Embed(color=0xff9900, title="Meme", url='https://www.reddit.com' + str(meme.permalink), description=str(meme.title)).set_image(url=str(meme.url)))
+        else:
+            await ctx.send(embed=discord.Embed(color=0xff9900, title="Мем").set_image(url=str(get_photo_max_scale(get_random_post_attachment_no_ads("amfet1")))))
+
+
+
 
     @commands.command(name="glitch")
     async def glitch(self, ctx, arg=None, amount=None):
@@ -184,33 +263,39 @@ class FunCog(commands.Cog, name="Fun module"):
                                                        "notFound" + guildlang)[:-1].lower())).set_footer(
                     icon_url=geniuslogo, text="Lyrics command"))
 
+    @commands.command(name="compress")
+    async def pix2msch(self, ctx):
+        guildlang = getlang(ctx=ctx)
+        imgurl = ctx.message.attachments[0].url
+        img = Image.open(requests.get(imgurl, stream=True).raw)
+        img = img.copy()
+        message = await ctx.send("processing")
+        img = modules.quantize(img, True, 127)
+        img.save("./temp/mschpreview.png")
+        await message.edit(content="completed")
+        file = discord.File("./temp/mschpreview.png")
+        await ctx.send(file=file)
+
     @commands.command(name="rule34")
+    @commands.is_nsfw()
     async def rule34(self, ctx, *, arg=None):
         guildlang = getlang(ctx=ctx)
-        if ctx.channel.is_nsfw() is True:
-            if arg is None:
-                await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
-            else:
-                try:
-                    api = 'https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags={}'.format('+'.join(arg.split()))
-                    xmldata = requests.get(api).text.split('>')
-                    post = str(xmldata[random.randint(2, len(xmldata) - 2)]).replace('\r', '').replace('\n', '')[1: -1]
-                    imageurl = post.split(' ')[3].split('"')[1]
-                    tags = str(post.split('"')[19])
-                    await ctx.send(embed=discord.Embed(color=0x336633).set_image(url=imageurl).set_footer(
-                        text=translates.get('tagspron' + guildlang) + '\r\n' + tags).set_author(name='rule34',
-                                                                                                icon_url='https://rule34.xxx/favicon.png'))
-                    for i in tags.split(' '):
-                        r34db = storage("./database/r34.db")
-                        intdata = int(r34db.get(i))
-                        r34db.set(i, intdata + 1)
-                except IndexError:
-                    await ctx.send(embed=discord.Embed(title=translates.get("error" + guildlang),
-                                                       description=translates.get("notFound" + guildlang)[:-1]))
+        
+        if arg is None:
+            await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
         else:
-            await ctx.send(embed=discord.Embed(title=translates.get('error' + guildlang),
-                                               description=translates.get('notNSFW' + guildlang)))
-
+            try:
+                api = 'https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags={}'.format('+'.join(arg.split()))
+                xmldata = requests.get(api).text.split('>')
+                post = str(xmldata[random.randint(2, len(xmldata) - 2)]).replace('\r', '').replace('\n', '')[1: -1]
+                imageurl = post.split(' ')[3].split('"')[1]
+                tags = str(post.split('"')[19])
+                await ctx.send(embed=discord.Embed(color=0x336633).set_image(url=imageurl).set_footer(text=translates.get('tagspron' + guildlang) + '\r\n' + tags).set_author(name='rule34', icon_url='https://rule34.xxx/favicon.png'))
+                    
+            except IndexError:
+                await ctx.send(embed=discord.Embed(title=translates.get("error" + guildlang),
+                                                       description=translates.get("notFound" + guildlang)[:-1]))
+        
     @commands.command(name="image")
     async def image(self, ctx, *, arg=None):
         guildlang = getlang(ctx=ctx)
