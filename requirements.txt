@@ -21,5 +21,10 @@ praw~=7.2.0
 pillow
 glitch_this
 jishaku
-psycopg2-binary
 vk_api
+cloudscraper
+xmltodict
+asyncpg
+asyncpraw
+psutil
+PyNaCl

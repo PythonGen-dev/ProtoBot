@@ -1,10 +1,8 @@
 from discord.ext import commands
 import discord
-try:
-	from modules import getcolorfromurl, storage, getlang, getcustomemote
-	translates = storage("./locals/langs.lang")
-	emotes = storage("./locals/emotes.lang")
-except: pass
+
+from utils.modules import getcolorfromurl, aiogetlang, getcustomemote, translations, apifetchuser
+
 import re
 import random
 
@@ -117,18 +115,18 @@ class TicTacToe(commands.Cog):
     @commands.group(aliases=["tic", "tac", "toe"], invoke_without_command=True, name = "ttt")
     @commands.guild_only()
     async def tictactoe(self, ctx, *, option: str = None):
-        guildlang = getlang(ctx)
+        guildlang = await aiogetlang(ctx)
         if option == None:
-            await ctx.send(embed=discord.Embed(title=translates.get('ErrNotArg' + guildlang)))
+            await ctx.send(embed=discord.Embed(title=translations(guildlang, 'ErrNotArg')))
             return
         
         player = ctx.message.author
         board = self.boards.get(ctx.message.guild.id)
         if not board:
-            await ctx.send(embed = discord.Embed(title=translates.get('notttgamesstarted' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'notttgamesstarted')))
             return
         if not board.can_play(player):
-            await ctx.send(embed = discord.Embed(title=translates.get('cantplaynowttt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'cantplaynowttt')))
             return
             
         topleft = re.search("1", option)    
@@ -142,7 +140,7 @@ class TicTacToe(commands.Cog):
         bottomright = re.search("9", option)
         
         if not top and not bottom and not left and not right and not middle and not topleft and not topright and not bottomleft and not bottomright:
-            await ctx.send(embed = discord.Embed(title=translates.get('selectvalidcagettt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'selectvalidcagettt')))
             return
 
         x = 0
@@ -178,12 +176,12 @@ class TicTacToe(commands.Cog):
         	
 
         if not board.update(x, y):
-            await ctx.send(embed = discord.Embed(title=translates.get('someonealreadyplayedherettt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'someonealreadyplayedherettt')))
             return
         
         winner = board.check()
         if winner:
-            await ctx.send(embed = discord.Embed(title=str(winner.display_name)+" "+translates.get('playerwinttt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=str(winner.display_name)+" "+translations(guildlang, 'playerwin')))
   
            
             try:
@@ -192,7 +190,7 @@ class TicTacToe(commands.Cog):
                 pass
         else:
             if board.full():
-                await ctx.send(embed = discord.Embed(title=translates.get('tieendttt' + guildlang)))
+                await ctx.send(embed = discord.Embed(title=translations(guildlang, 'tieendttt')))
                 try:
                     del self.boards[ctx.message.guild.id]
                 except KeyError:
@@ -203,33 +201,33 @@ class TicTacToe(commands.Cog):
                     if board.X_turn
                     else board.challengers.get("o")
                 )
-                embed = discord.Embed(title=translates.get('Tic-Tac-Toe' + guildlang), description = str(board)).set_author(name = str(player_turn.display_name), icon_url = player_turn.avatar_url)
+                embed = discord.Embed(title=translations(guildlang, 'Tic-Tac-Toe'), description = str(board)).set_author(name = str(player_turn.display_name), icon_url = player_turn.avatar_url)
                 await ctx.send(embed = embed)
 
     @tictactoe.command(name="start")
     @commands.guild_only()
     async def start_game(self, ctx, player2: discord.Member = None):
-        guildlang = getlang(ctx)
+        guildlang = await aiogetlang(ctx)
         player1 = ctx.message.author
         if player2 == None:
-            await ctx.send(embed = discord.Embed(title=translates.get('cantplaywithselfbotttt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'cantplaywithselfbotttt')))
             return
         if self.boards.get(ctx.message.guild.id) is not None:
-            await ctx.send(embed = discord.Embed(title=translates.get('onlyonetttatserverr' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'onlyonetttatserverr')))
             return
         if player2 == ctx.message.guild.me:
-            await ctx.send(embed = discord.Embed(title=translates.get('cantplaywithselfbotttt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'cantplaywithselfbotttt')))
             return
         if player2 == player1:
-            await ctx.send(embed = discord.Embed(title=translates.get('cantplaywithyourselfttt' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'cantplaywithyourselfttt')))
             return
         if player2.bot == True:
-            await ctx.send(embed = discord.Embed(title=translates.get('infoAboutBotErr' + guildlang)))
+            await ctx.send(embed = discord.Embed(title=translations(guildlang, 'infoAboutBotErr')))
             return
 
         
         x_player = self.create(ctx.message.guild.id, player1, player2)
-        embed = discord.Embed(title=translates.get('Tic-Tac-Toe' + guildlang), description = str(self.boards[ctx.message.guild.id])).set_author(name = str(x_player.display_name), icon_url = x_player.avatar_url)
+        embed = discord.Embed(title=translations(guildlang, 'Tic-Tac-Toe'), description = str(self.boards[ctx.message.guild.id])).set_author(name = str(x_player.display_name), icon_url = x_player.avatar_url)
         await ctx.send(embed = embed)
         
 

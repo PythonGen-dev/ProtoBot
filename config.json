@@ -1,1 +1,19 @@
-{"boticordtoken":"","discordbotsggtoken":"","fetchusertoken":"","herokuapikey":"","pixabayapikey":"","prefix":"!=","prefixbeta":"!= ","redditclientid":"","redditclientsecret":"","token":"","tokenbeta":"","twitchclientid":"","unsplashclientid":"","vk_app_id":0,"vk_app_token":""}
+{
+  "token": "",
+  "prefix": "!=",
+  "tokenbeta": "",
+  "prefixbeta": "!= ",
+  "unsplashclientid": "",
+  "pixabayapikey": "",
+  "redditclientid": "",
+  "redditclientsecret": "",
+  "discordbotsggtoken": "",
+  "fetchusertoken": "",
+  "boticordtoken": "",
+  "twitchclientid": "",
+  "herokuapikey": "",
+  "vk_app_id": 123456789,
+  "vk_app_token": "",
+  "srapitoken": "",
+  "logswebhook": ""
+}

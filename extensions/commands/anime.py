@@ -5,9 +5,8 @@ import discord
 import requests
 from discord.ext import commands
 
-from modules import storage, getlang
+from utils.modules import aiogetlang, translations
 
-translates = storage("./locals/langs.lang")
 
 winklist = ['https://i.pinimg.com/originals/1a/3e/80/1a3e80b2d8b08e39d3a7355dc23a88db.gif',
             'https://thumbs.gfycat.com/TinySoftApe-small.gif',
@@ -72,8 +71,8 @@ class AnimeCog(commands.Cog, name="anime cog"):
             mention = ''
         else:
             mention = user.mention
-        guildlang = getlang(ctx=ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('facepalm' + guildlang), description=mention)
+        guildlang = await aiogetlang(ctx)
+        embed = discord.Embed(color=0xffffff, title=translations(guildlang, "facepalm"), description=mention)
         embed.set_image(url=random.choice(facepalmlist))
         await ctx.send(embed=embed)
 
@@ -83,8 +82,8 @@ class AnimeCog(commands.Cog, name="anime cog"):
             mention = ''
         else:
             mention = user.mention
-        guildlang = getlang(ctx=ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('hug' + guildlang), description=mention)
+        guildlang = await aiogetlang(ctx)
+        embed = discord.Embed(color=0xffffff, title=translations(guildlang, "hug"), description=mention)
         embed.set_image(url=random.choice(huglist))
         await ctx.send(embed=embed)
 
@@ -94,8 +93,8 @@ class AnimeCog(commands.Cog, name="anime cog"):
             mention = ''
         else:
             mention = user.mention
-        guildlang = getlang(ctx=ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('wink' + guildlang), description=mention)
+        guildlang = await aiogetlang(ctx)
+        embed = discord.Embed(color=0xffffff, title=translations(guildlang, "wink"), description=mention)
         embed.set_image(url=random.choice(winklist))
         await ctx.send(embed=embed)
 
@@ -105,27 +104,27 @@ class AnimeCog(commands.Cog, name="anime cog"):
             mention = ''
         else:
             mention = user.mention
-        guildlang = getlang(ctx=ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('pat' + guildlang), description=mention)
+        guildlang = await aiogetlang(ctx)
+        embed = discord.Embed(color=0xffffff, title=translations(guildlang, "pat"), description=mention)
         embed.set_image(url=random.choice(patlist))
         await ctx.send(embed=embed)
 
     @commands.command(name="sad")
     async def sad(self, ctx):
-        guildlang = getlang(ctx=ctx)
-        embed = discord.Embed(color=0xff9900, title=translates.get('sad' + guildlang))
+        guildlang = await aiogetlang(ctx)
+        embed = discord.Embed(color=0xffffff, title=translations(guildlang, "sad"))
         embed.set_image(url=random.choice(sadlist))
         await ctx.send(embed=embed)
 
     @commands.command(name="quote")
     async def quote(self, ctx):
-        guildlang = getlang(ctx=ctx)
+        guildlang = await aiogetlang(ctx)
         response = requests.get('https://some-random-api.ml/animu/quote', timeout=5)
         json_data = json.loads(response.text)
-        embed = discord.Embed(color=0xff9900,
-                              title=json_data['anime'] + ' ' + translates.get('quote' + guildlang).casefold(),
-                              description=translates.get('characther' + guildlang) + ' ' + json_data['characther'])
-        embed.add_field(name=translates.get('quote' + guildlang), value=json_data['sentence'], inline=False, )
+        embed = discord.Embed(color=0xffffff,
+                              title=json_data['anime'] + ' ' + translations(guildlang, "quote").casefold(),
+                              description=translations(guildlang, "characther") + ' ' + json_data['characther'])
+        embed.add_field(name=translations(guildlang, "quote"), value=json_data['sentence'], inline=False)
         await ctx.send(embed=embed)
 
 

@@ -7,7 +7,7 @@ class PingCog(commands.Cog, name="ping command"):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="boop")
+    @commands.command(name="boop", aliases=['ping', 'пинг'])
     async def boop(self, ctx):
         before = time.monotonic()
         message = await ctx.send("OwO")
